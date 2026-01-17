@@ -6,6 +6,9 @@ import { config } from './config/index.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 
+// Import routes
+import authRoutes from './routes/auth.routes.js';
+
 // Create Express application
 const app: Express = express();
 
@@ -110,7 +113,7 @@ app.get('/health/detailed', async (_req: Request, res: Response) => {
 // API version prefix
 const API_PREFIX = '/api';
 
-// Placeholder for routes (will be added in later phases)
+// API info endpoint
 app.get(`${API_PREFIX}`, (_req: Request, res: Response) => {
   res.json({
     success: true,
@@ -126,6 +129,14 @@ app.get(`${API_PREFIX}`, (_req: Request, res: Response) => {
     },
   });
 });
+
+// Register routes
+app.use(`${API_PREFIX}/auth`, authRoutes);
+// Additional routes will be added in later phases:
+// app.use(`${API_PREFIX}/chat`, chatRoutes);
+// app.use(`${API_PREFIX}/emails`, emailRoutes);
+// app.use(`${API_PREFIX}/calendar`, calendarRoutes);
+// app.use(`${API_PREFIX}/tasks`, taskRoutes);
 
 // =============================================================================
 // Error Handling
