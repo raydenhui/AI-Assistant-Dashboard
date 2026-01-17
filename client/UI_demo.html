@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Productivity AI Assistant - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* General Styles & Color Palette */
+        :root {
+            --primary-blue: #347ac0; /* Main accent for branding, active states */
+            --secondary-green: #6bb98a; /* For AI status, success, high priority */
+            --light-bg: #F5F5F5; /* Main background */
+            --widget-bg: #FFFFFF; /* Widget background */
+            --dark-text: #333333; /* Primary text color */
+            --medium-text: #666666; /* Secondary text, subtle */
+            --light-gray-border: #E0E0E0; /* Borders, dividers */
+            --chat-bg-ai: #e0f2f7; /* AI chat bubble background */
+            --chat-bg-user: #f0f0f0; /* User chat bubble background */
+            --danger-red: #DC3545; /* Urgent/Error */
+            --warning-orange: #FFC107; /* Warning/Attention */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-bg);
+            color: var(--dark-text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--widget-bg);
+            padding: 15px 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-left, .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-blue);
+            color: var(--widget-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            flex-shrink: 0; /* Prevent avatar from shrinking */
+        }
+        
+        .ai-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: var(--medium-text);
+        }
+
+        .ai-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--secondary-green);
+        }
+
+        .ai-status-dot.thinking {
+            background-color: var(--warning-orange);
+        }
+
+        .app-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--dark-text);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            flex-grow: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Dashboard Panel (Left) */
+        .dashboard-panel {
+            flex: 3; /* Takes 3 parts of the space */
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .widget {
+            background-color: var(--widget-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            padding: 20px;
+            overflow: hidden; /* For content that might overflow */
+        }
+
+        .widget-header {
+            font-size: 1.15em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--light-gray-border);
+            padding-bottom: 10px;
+        }
+
+        .widget-header button {
+            background: none;
+            border: none;
+            color: var(--primary-blue);
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .item-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--light-gray-border);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .item-main-row { /* New for delete button alignment */
+            display: flex;
+            align-items: flex-start; /* Align content at start, delete at end */
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .item-content { /* Original item-row content */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1; /* Allows content area to grow */
+        }
+        
+        .delete-btn { /* Style for delete buttons */
+            background: none;
+            border: none;
+            color: var(--medium-text); /* Subtle gray initially */
+            cursor: pointer;
+            font-size: 1em;
+            margin-left: 10px; /* Space between content and delete */
+            opacity: 0.7; /* Slightly transparent */
+            transition: color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+            flex-shrink: 0; /* Prevent button from shrinking */
+        }
+        .delete-btn:hover {
+            color: var(--danger-red); /* Turns red on hover */
+            opacity: 1;
+        }
+
+        .item-title {
+            font-weight: 500;
+            margin-right: auto; /* Pushes priority/delete to the right */
+        }
+
+        .item-meta {
+            font-size: 0.85em;
+            color: var(--medium-text);
+            display: flex;
+            gap: 10px;
+            padding-left: 0; /* Adjust if item-content has padding */
+        }
+
+        .item-summary {
+            font-style: italic;
+            font-size: 0.9em;
+            color: var(--medium-text);
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        .item-priority {
+            background-color: var(--secondary-green);
+            color: var(--widget-bg);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: bold;
+            white-space: nowrap; /* Prevent text wrap */
+        }
+
+        .item-priority.high {
+            background-color: var(--danger-red);
+        }
+        .item-priority.medium {
+            background-color: var(--warning-orange);
+        }
+
+        /* Action Items specific */
+        .action-item-content { /* Now this contains checkbox and label */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        .action-item-content input[type="checkbox"] {
+            transform: scale(1.2);
+            accent-color: var(--primary-blue);
+        }
+        .action-item-text.completed {
+            text-decoration: line-through;
+            color: var(--medium-text);
+        }
+
+        /* Upcoming Schedule specific */
+        .event-details-wrapper { /* New wrapper for event time/details and delete button */
+            display: flex;
+            align-items: flex-start; /* Align content at start */
+            justify-content: space-between;
+            width: 100%;
+        }
+        .event-time-and-details {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px; /* Space between time and event details */
+            flex-grow: 1;
+        }
+        .event-time {
+            width: 70px;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: var(--primary-blue);
+            flex-shrink: 0; /* Prevent time from shrinking */
+        }
+        .event-details {
+            flex-grow: 1;
+        }
+        .event-location {
+            font-size: 0.85em;
+            color: var(--medium-text);
+        }
+
+
+        /* Chat Panel (Right) */
+        .chat-panel {
+            flex: 2; /* Takes 2 parts of the space */
+            background-color: var(--widget-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-panel-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--light-gray-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--dark-text);
+        }
+
+        .new-chat-btn {
+            background: none;
+            border: 1px solid var(--primary-blue);
+            color: var(--primary-blue);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+        .new-chat-btn:hover {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+
+        .chat-history {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 20px;
+            line-height: 1.4;
+        }
+
+        .chat-message.ai {
+            align-self: flex-start;
+            background-color: var(--chat-bg-ai);
+        }
+
+        .chat-message.user {
+            align-self: flex-end;
+            background-color: var(--chat-bg-user);
+        }
+
+        .chat-input {
+            border-top: 1px solid var(--light-gray-border);
+            padding: 15px 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input[type="text"] {
+            flex-grow: 1;
+            border: 1px solid var(--light-gray-border);
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 1em;
+            outline: none;
+        }
+
+        .chat-input button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-input button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <div class="user-avatar">RH</div> <!-- Changed from JD to RH -->
+            <div class="app-title">Productivity AI Assistant</div>
+        </div>
+        <div class="header-right">
+            <div class="ai-status">
+                <span class="ai-status-dot"></span>
+                <span>AI Online</span>
+            </div>
+            <!-- Optional: Settings icon, user menu, etc. -->
+            <i class="fas fa-cog" style="color: var(--medium-text);"></i>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div class="dashboard-panel">
+
+            <!-- Prioritized Inbox Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <span>Prioritized Inbox</span>
+                    <button>View All</button>
+                </div>
+                <ul class="item-list">
+                    <li class="item">
+                        <div class="item-main-row">
+                            <div class="item-content">
+                                <span class="item-title">Project X Update - Deadline Approaching!</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="item-priority high">High Priority</span>
+                                <button class="delete-btn" aria-label="Dismiss email"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                        <div class="item-meta">
+                            <span>From: John Doe</span>
+                            <span>2 hours ago</span>
+                        </div>
+                        <p class="item-summary">AI Summary: Urgent request for final review of Project X presentation slides. Deadline tomorrow.</p>
+                    </li>
+                    <li class="item">
+                        <div class="item-main-row">
+                            <div class="item-content">
+                                <span class="item-title">Meeting Schedule - New Proposal Discussion</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="item-priority">Important</span>
+                                <button class="delete-btn" aria-label="Dismiss email"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                        <div class="item-meta">
+                            <span>From: Team Lead</span>
+                            <span>Yesterday</span>
+                        </div>
+                        <p class="item-summary">AI Summary: Discussion on Q3 proposal moved to next Tuesday, 10 AM. Please confirm availability.</p>
+                    </li>
+                    <li class="item">
+                        <div class="item-main-row">
+                            <div class="item-content">
+                                <span class="item-title">Weekly Newsletter - October Edition</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="item-priority">Digest</span>
+                                <button class="delete-btn" aria-label="Dismiss email"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                        <div class="item-meta">
+                            <span>From: Marketing</span>
+                            <span>Oct 23</span>
+                        </div>
+                        <p class="item-summary">AI Summary: General company news and updates. No direct action required.</p>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Action Items Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <span>Action Items</span>
+                    <button>Add New <i class="fas fa-plus"></i></button>
+                </div>
+                <ul class="item-list">
+                    <li class="item">
+                        <div class="item-main-row">
+                            <div class="action-item-content">
+                                <input type="checkbox" id="task1">
+                                <label for="task1" class="item-title">Finalize Project X presentation slides</label>
+                            </div>
+                            <button class="delete-btn" aria-label="Delete task"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                        <div class="item-meta">
+                            <span>Due: Tomorrow</span>
+                            <span>Source: Prioritized Inbox</span>
+                        </div>
+                    </li>
+                    <li class="item">
+                        <div class="item-main-row">
+                            <div class="action-item-content">
+                                <input type="checkbox" id="task2">
+                                <label for="task2" class="item-title">Confirm availability for Q3 proposal meeting</label>
+                            </div>
+                            <button class="delete-btn" aria-label="Delete task"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                        <div class="item-meta">
+                            <span>Due: Nov 1</span>
+                            <span>Source: Prioritized Inbox</span>
+                        </div>
+                    </li>
+                    <li class="item">
+                        <div class="item-main-row">
+                            <div class="action-item-content">
+                                <input type="checkbox" id="task3" checked>
+                                <label for="task3" class="item-title completed">Review project budget Q2 report</label>
+                            </div>
+                            <button class="delete-btn" aria-label="Delete task"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                        <div class="item-meta">
+                            <span>Completed: Today</span>
+                            <span>Source: Chat with AI</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Upcoming Schedule Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <span>Upcoming Schedule</span>
+                    <button>View Full Calendar</button>
+                </div>
+                <ul class="item-list">
+                    <li class="item">
+                        <div class="event-details-wrapper">
+                            <div class="event-time-and-details">
+                                <span class="event-time">10:00 AM</span>
+                                <div class="event-details">
+                                    <span class="item-title">Daily Standup (Project Alpha)</span>
+                                    <span class="event-location"><i class="fas fa-video"></i> Google Meet</span>
+                                </div>
+                            </div>
+                            <button class="delete-btn" aria-label="Dismiss event"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                        <p class="item-summary">AI Summary: Key topics: sprint progress, blockers, next steps for feature B.</p>
+                    </li>
+                    <li class="item">
+                        <div class="event-details-wrapper">
+                            <div class="event-time-and-details">
+                                <span class="event-time">02:30 PM</span>
+                                <div class="event-details">
+                                    <span class="item-title">1:1 with Jane Smith</span>
+                                    <span class="event-location"><i class="fas fa-map-marker-alt"></i> Office Meeting Room 3</span>
+                                </div>
+                            </div>
+                            <button class="delete-btn" aria-label="Dismiss event"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </li>
+                    <li class="item">
+                        <div class="event-details-wrapper">
+                            <div class="event-time-and-details">
+                                <span class="event-time">04:00 PM</span>
+                                <div class="event-details">
+                                    <span class="item-title">Presentation Prep - Project X</span>
+                                    <span class="event-location"><i class="fas fa-user-friends"></i> Team Collaboration</span>
+                                </div>
+                            </div>
+                            <button class="delete-btn" aria-label="Dismiss event"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- Conversational AI Panel -->
+        <div class="chat-panel">
+            <div class="chat-panel-header">
+                <span>AI Chat</span>
+                <button class="new-chat-btn"><i class="fas fa-plus"></i> New Chat</button>
+            </div>
+            <div class="chat-history">
+                <div class="chat-message ai">Hello! How can I help you manage your workday today?</div>
+                <div class="chat-message user">Can you give me a summary of my urgent emails?</div>
+                <div class="chat-message ai">Certainly. I've identified an urgent email from John Doe: "Project X Update - Deadline Approaching!". Its summary is: "Urgent request for final review of Project X presentation slides. Deadline tomorrow."
+                    <br><br>I've automatically added **"Finalize Project X presentation slides"** to your action items.</div>
+                <div class="chat-message user">That's very helpful! What about the "Review project budget Q2 report" task?</div>
+                <div class="chat-message ai">The "Review project budget Q2 report" task was marked as completed earlier today, based on our chat yesterday.</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" placeholder="Ask your AI assistant...">
+                <button><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
