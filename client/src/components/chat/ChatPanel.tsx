@@ -53,11 +53,7 @@ export function ChatPanel() {
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
-        {messages.length === 0 ? (
-          <div className="chat-bubble chat-bubble-ai dark:text-slate-200">
-            Hello! How can I help you manage your workday today?
-          </div>
-        ) : (
+        {
           <>
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
@@ -70,7 +66,7 @@ export function ChatPanel() {
               </div>
             )}
           </>
-        )}
+        }
         
         {/* Loading indicator */}
         {isLoading && !isStreaming && (
