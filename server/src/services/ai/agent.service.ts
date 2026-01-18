@@ -61,7 +61,7 @@ function dbMessagesToLLMMessages(messages: Message[]): ChatMessage[] {
 
     // Add tool calls if present
     if (msg.toolCalls && msg.role === 'ASSISTANT') {
-      base.tool_calls = msg.toolCalls as ToolCall[];
+      base.tool_calls = msg.toolCalls as unknown as ToolCall[];
     }
 
     // Add tool_call_id if this is a tool response
