@@ -226,18 +226,22 @@ export async function updateUserSettings(
   settings: {
     llmProvider?: 'OPENROUTER' | 'OLLAMA';
     llmSettings?: Record<string, unknown> | null;
+    openRouterKey?: string | null;
     theme?: 'LIGHT' | 'DARK' | 'SYSTEM';
     timezone?: string;
   }
 ): Promise<User> {
   // Build update data with proper typing
-  const updateData: Parameters<typeof prisma.user.update>[0]['data'] = {};
+  const updateData: any = {};
   
   if (settings.llmProvider !== undefined) {
     updateData.llmProvider = settings.llmProvider;
   }
   if (settings.llmSettings !== undefined) {
-    updateData.llmSettings = settings.llmSettings as Parameters<typeof prisma.user.update>[0]['data']['llmSettings'];
+    updateData.llmSettings = settings.llmSettings;
+  }
+  if (settings.openRouterKey !== undefined && settings.openRouterKey !== '' && !settings.openRouterKey.includes('•')) {
+    updateData.openRouterKey = settings.openRouterKey;
   }
   if (settings.theme !== undefined) {
     updateData.theme = settings.theme;

@@ -120,6 +120,12 @@ export async function getCurrentUser(
 
   const user = await getUserById(req.userId);
 
+  console.log(`[AuthController] Getting current user ${req.userId}:`, {
+    llmProvider: user.llmProvider,
+    llmSettings: user.llmSettings,
+    hasOpenRouterKey: !!(user as any).openRouterKey
+  });
+
   res.json({
     success: true,
     data: {
@@ -127,8 +133,9 @@ export async function getCurrentUser(
       email: user.email,
       name: user.name,
       picture: user.picture,
-      llmProvider: user.llmProvider,
-      llmSettings: user.llmSettings,
+      llmProvider: user.llmProvider.toLowerCase(),
+      llmModel: (user.llmSettings as any)?.model || null,
+      openRouterKey: (user as any).openRouterKey ? '••••••••' : null,
       theme: user.theme,
       timezone: user.timezone,
       hasGoogleAuth: !!(user.googleAccessToken && user.googleRefreshToken),
@@ -150,7 +157,15 @@ export async function updateSettings(
     throw new BadRequestError('Not authenticated');
   }
 
-  const { llmProvider, llmSettings, theme, timezone } = req.body;
+  const { llmProvider, llmSettings, openRouterKey, theme, timezone } = req.body;
+  
+  console.log(`[AuthController] Updating settings for user ${req.userId}:`, {
+    llmProvider,
+    llmSettings,
+    hasOpenRouterKey: !!openRouterKey,
+    theme,
+    timezone
+  });
 
   // Validate llmProvider
   if (llmProvider && !['OPENROUTER', 'OLLAMA'].includes(llmProvider)) {
@@ -165,9 +180,12 @@ export async function updateSettings(
   const updatedUser = await updateUserSettings(req.userId, {
     llmProvider,
     llmSettings,
+    openRouterKey,
     theme,
     timezone,
   });
+  
+  console.log(`[AuthController] Settings updated successfully for user ${req.userId}`);
 
   res.json({
     success: true,
@@ -175,10 +193,12 @@ export async function updateSettings(
       id: updatedUser.id,
       email: updatedUser.email,
       name: updatedUser.name,
-      llmProvider: updatedUser.llmProvider,
-      llmSettings: updatedUser.llmSettings,
+      llmProvider: updatedUser.llmProvider.toLowerCase(),
+      llmModel: (updatedUser.llmSettings as any)?.model || null,
+      openRouterKey: (updatedUser as any).openRouterKey ? '••••••••' : null,
       theme: updatedUser.theme,
       timezone: updatedUser.timezone,
+      updatedAt: updatedUser.updatedAt.toISOString(),
     },
   });
 }

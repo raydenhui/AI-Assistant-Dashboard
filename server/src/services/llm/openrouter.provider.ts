@@ -33,12 +33,22 @@ export class OpenRouterProvider extends LLMProvider {
    * Build request headers
    */
   private getHeaders(): Record<string, string> {
-    return {
-      'Authorization': `Bearer ${this.apiKey}`,
+    // Ensure apiKey is a clean string without non-ASCII characters
+    const cleanApiKey = typeof this.apiKey === 'string'
+      ? this.apiKey.replace(/[^\x00-\x7F]/g, '').trim()
+      : '';
+
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'HTTP-Referer': 'http://localhost:3001', // Required by OpenRouter
       'X-Title': 'AI Dashboard', // App identification
     };
+
+    if (cleanApiKey) {
+      headers['Authorization'] = `Bearer ${cleanApiKey}`;
+    }
+
+    return headers;
   }
 
   /**
@@ -88,14 +98,29 @@ export class OpenRouterProvider extends LLMProvider {
    * Send a chat completion request
    */
   async chat(options: ChatCompletionOptions): Promise<ChatCompletionResponse> {
+    const headers = this.getHeaders();
+    const body = this.buildRequestBody({ ...options, stream: false });
+    
+    console.log(`[OpenRouterProvider] Sending request to ${this.baseUrl}/chat/completions`, {
+      model: body.model,
+      messageCount: (body.messages as any[]).length,
+      hasApiKey: !!headers['Authorization'],
+      apiKeyPreview: headers['Authorization']?.substring(0, 15) + '...'
+    });
+
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(this.buildRequestBody({ ...options, stream: false })),
+      headers,
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+      console.error(`[OpenRouterProvider] API Error:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error
+      });
       throw new Error(
         `OpenRouter API error: ${response.status} - ${(error as Record<string, unknown>).message || response.statusText}`
       );
@@ -229,9 +254,9 @@ export class OpenRouterProvider extends LLMProvider {
   /**
    * Check if the provider is available
    */
-  async isAvailable(): Promise<boolean> {
+  async isAvailable(apiKey?: string): Promise<boolean> {
     try {
-      const status = await this.getHealthStatus();
+      const status = await this.getHealthStatus(apiKey);
       return status.available;
     } catch {
       return false;
@@ -241,13 +266,23 @@ export class OpenRouterProvider extends LLMProvider {
   /**
    * Get detailed health status
    */
-  async getHealthStatus(): Promise<ProviderHealthStatus> {
+  async getHealthStatus(apiKey?: string): Promise<ProviderHealthStatus> {
     const startTime = Date.now();
+    
+    // Clean the provided apiKey if it exists
+    const cleanApiKey = typeof apiKey === 'string'
+      ? apiKey.replace(/[^\x00-\x7F]/g, '').trim()
+      : undefined;
+
+    const headers = { ...this.getHeaders() };
+    if (cleanApiKey) {
+      headers['Authorization'] = `Bearer ${cleanApiKey}`;
+    }
 
     try {
       const response = await fetch(`${this.baseUrl}/models`, {
         method: 'GET',
-        headers: this.getHeaders(),
+        headers,
       });
 
       const latencyMs = Date.now() - startTime;
@@ -282,10 +317,20 @@ export class OpenRouterProvider extends LLMProvider {
   /**
    * List available models
    */
-  async listModels(): Promise<ModelInfo[]> {
+  async listModels(apiKey?: string): Promise<ModelInfo[]> {
+    // Clean the provided apiKey if it exists
+    const cleanApiKey = typeof apiKey === 'string'
+      ? apiKey.replace(/[^\x00-\x7F]/g, '').trim()
+      : undefined;
+
+    const headers = { ...this.getHeaders() };
+    if (cleanApiKey) {
+      headers['Authorization'] = `Bearer ${cleanApiKey}`;
+    }
+
     const response = await fetch(`${this.baseUrl}/models`, {
       method: 'GET',
-      headers: this.getHeaders(),
+      headers,
     });
 
     if (!response.ok) {

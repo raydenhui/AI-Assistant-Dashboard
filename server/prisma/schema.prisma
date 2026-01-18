@@ -25,6 +25,7 @@ model User {
   // LLM Provider settings
   llmProvider   LLMProvider @default(OPENROUTER)
   llmSettings   Json?       // Additional provider-specific settings
+  openRouterKey String?     // User-specific OpenRouter API key
   
   // User preferences
   theme         Theme    @default(SYSTEM)

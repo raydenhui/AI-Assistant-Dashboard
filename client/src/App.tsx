@@ -4,6 +4,7 @@ import { useAuthStore } from './store';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { ToastContainer } from './components/common/Toast';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -52,48 +53,68 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { checkAuth, isAuthenticated } = useAuthStore();
+  const { checkAuth, isAuthenticated, user } = useAuthStore();
 
   // Check authentication on mount
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
+  // Handle theme changes
+  useEffect(() => {
+    const theme = (user?.theme || 'SYSTEM').toLowerCase();
+    const root = window.document.documentElement;
+    
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.classList.remove('light', 'dark');
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.remove('light', 'dark');
+      root.classList.add(theme);
+    }
+  }, [user?.theme]);
+
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        }
-      />
-      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+    <>
+      <Routes>
+        {/* Public routes */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-      {/* Protected routes */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Catch all - redirect to dashboard or login */}
-      <Route
-        path="*"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-    </Routes>
+        {/* Catch all - redirect to dashboard or login */}
+        <Route
+          path="*"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
+      
+      {/* Global Toast Container */}
+      <ToastContainer />
+    </>
   );
 }
 

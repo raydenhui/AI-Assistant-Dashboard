@@ -5,8 +5,8 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
-  const isUser = message.role === 'user';
-  const isAssistant = message.role === 'assistant';
+  const isUser = message.role.toLowerCase() === 'user';
+  const isAssistant = message.role.toLowerCase() === 'assistant';
 
   if (!isUser && !isAssistant) {
     // Don't render system or tool messages
@@ -16,7 +16,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div
       className={`chat-bubble ${
-        isUser ? 'chat-bubble-user' : 'chat-bubble-ai'
+        isUser ? 'chat-bubble-user dark:text-slate-200' : 'chat-bubble-ai dark:text-slate-200'
       }`}
     >
       {/* Message content with basic markdown-like formatting */}
@@ -39,7 +39,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
       {/* Tool calls indicator (if any) */}
       {message.toolCalls && message.toolCalls.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-border/50 text-xs text-gray-500">
+        <div className="mt-2 pt-2 border-t border-border/50 text-xs text-gray-500 dark:text-slate-400 dark:border-slate-700">
           <span className="flex items-center gap-1">
             <i className="fas fa-cog"></i>
             Used {message.toolCalls.length} tool

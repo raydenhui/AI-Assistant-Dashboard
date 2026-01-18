@@ -250,7 +250,7 @@ export class OllamaProvider extends LLMProvider {
   /**
    * Check if the provider is available
    */
-  async isAvailable(): Promise<boolean> {
+  async isAvailable(_apiKey?: string): Promise<boolean> {
     try {
       const status = await this.getHealthStatus();
       return status.available;
@@ -262,7 +262,7 @@ export class OllamaProvider extends LLMProvider {
   /**
    * Get detailed health status
    */
-  async getHealthStatus(): Promise<ProviderHealthStatus> {
+  async getHealthStatus(_apiKey?: string): Promise<ProviderHealthStatus> {
     const startTime = Date.now();
 
     try {
@@ -321,7 +321,7 @@ export class OllamaProvider extends LLMProvider {
   /**
    * List available models
    */
-  async listModels(): Promise<ModelInfo[]> {
+  async listModels(_apiKey?: string): Promise<ModelInfo[]> {
     const response = await fetch(`${this.baseUrl}/api/tags`, {
       method: 'GET',
     });

@@ -2,10 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme Variables */
+:root {
+  --color-background: #F5F5F5;
+  --color-widget: #FFFFFF;
+  --color-border: #E0E0E0;
+  --color-chat-ai: #e0f2f7;
+  --color-chat-user: #f0f0f0;
+  --color-text: #1f2937;
+  --color-text-muted: #6b7280;
+}
+
+.dark {
+  --color-background: #0f172a;
+  --color-widget: #1e293b;
+  --color-border: #334155;
+  --color-chat-ai: #1e3a8a;
+  --color-chat-user: #334155;
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+}
+
 /* Custom base styles */
 @layer base {
+  html {
+    @apply transition-colors duration-200;
+  }
+
   body {
-    @apply bg-background text-gray-800 min-h-screen;
+    @apply bg-background text-gray-800 min-h-screen transition-colors duration-200;
+  }
+  
+  .dark body {
+    @apply text-slate-200;
   }
   
   #root {
@@ -23,7 +52,7 @@
 
   /* Chat message bubbles */
   .chat-bubble {
-    @apply max-w-[80%] px-4 py-2.5 rounded-chat leading-relaxed;
+    @apply max-w-[80%] px-4 py-2.5 rounded-chat leading-relaxed transition-colors duration-200;
   }
 
   .chat-bubble-ai {
@@ -36,11 +65,11 @@
 
   /* Widget card */
   .widget {
-    @apply bg-widget rounded-lg shadow-widget p-5 overflow-hidden;
+    @apply bg-widget rounded-lg shadow-widget p-5 overflow-hidden border border-border transition-colors duration-200;
   }
 
   .widget-header {
-    @apply text-lg font-semibold mb-4 flex justify-between items-center border-b border-border pb-2.5;
+    @apply text-lg font-semibold mb-4 flex justify-between items-center border-b border-border pb-2.5 transition-colors duration-200;
   }
 
   /* Priority badges */
@@ -62,7 +91,7 @@
 
   /* Form inputs */
   .input {
-    @apply w-full border border-border rounded-lg px-4 py-2.5 text-base outline-none transition-colors;
+    @apply w-full border border-border rounded-lg px-4 py-2.5 text-base outline-none transition-colors bg-widget;
     @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
   }
 
@@ -78,6 +107,10 @@
   .btn-secondary {
     @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
   }
+  
+  .dark .btn-secondary {
+    @apply bg-slate-700 text-slate-200 hover:bg-slate-600;
+  }
 
   .btn-outline {
     @apply border border-primary text-primary hover:bg-primary hover:text-white;
@@ -89,6 +122,10 @@
 
   .btn-icon {
     @apply p-2 rounded-full hover:bg-gray-100 transition-colors;
+  }
+  
+  .dark .btn-icon {
+    @apply hover:bg-slate-700;
   }
 
   /* Delete button */
@@ -102,4 +139,127 @@
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Animation keyframes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s ease-out;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Skeleton loading */
+.skeleton {
+  @apply bg-gray-200 rounded animate-pulse;
+}
+
+.dark .skeleton {
+  @apply bg-slate-700;
+}
+
+.skeleton-text {
+  @apply h-4 bg-gray-200 rounded animate-pulse;
+}
+
+.skeleton-title {
+  @apply h-5 bg-gray-200 rounded animate-pulse w-3/4;
+}
+
+/* Form styles */
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+
+.dark .form-label {
+  @apply text-slate-300;
+}
+
+.form-input {
+  @apply w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base outline-none transition-colors bg-widget;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+  @apply disabled:bg-gray-100 disabled:cursor-not-allowed;
+}
+
+.dark .form-input {
+  @apply border-slate-600;
+}
+
+.form-select {
+  @apply w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base outline-none transition-colors bg-widget;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+  @apply disabled:bg-gray-100 disabled:cursor-not-allowed;
+  @apply appearance-none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+.dark .form-select {
+  @apply border-slate-600;
+}
+
+.form-textarea {
+  @apply w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base outline-none transition-colors resize-none bg-widget;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+  @apply disabled:bg-gray-100 disabled:cursor-not-allowed;
+}
+
+.dark .form-textarea {
+  @apply border-slate-600;
+}
+
+.form-error {
+  @apply text-sm text-danger mt-1;
 }

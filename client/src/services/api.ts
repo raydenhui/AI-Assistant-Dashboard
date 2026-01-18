@@ -14,7 +14,7 @@ import type {
   UpdateEventInput,
   Conversation,
   ChatResponse,
-  LLMSettings,
+  UserSettingsUpdate,
 } from '../types';
 
 // API base URL - proxied through Vite in development
@@ -108,8 +108,11 @@ export const authApi = {
 
   // Check auth status
   getStatus: async (): Promise<AuthStatus> => {
-    const response = await apiClient.get<ApiResponse<AuthStatus>>('/auth/status');
-    return response.data.data!;
+    const response = await apiClient.get<ApiResponse<any>>('/auth/me');
+    return {
+      authenticated: true,
+      user: response.data.data
+    };
   },
 
   // Get current user
@@ -118,11 +121,34 @@ export const authApi = {
   },
 
   // Update user settings
-  updateSettings: async (settings: Partial<LLMSettings>): Promise<User> => {
+  updateSettings: async (settings: UserSettingsUpdate): Promise<User> => {
+    const payload: any = {};
+    
+    if (settings.provider) {
+      payload.llmProvider = settings.provider.toUpperCase();
+    }
+    
+    if (settings.model) {
+      payload.llmSettings = { model: settings.model };
+    }
+
+    // Always send openRouterKey if it's in settings, even if empty (to allow clearing)
+    if (settings.openRouterKey !== undefined) {
+      payload.openRouterKey = settings.openRouterKey;
+    }
+    
+    if (settings.theme) {
+      payload.theme = settings.theme.toUpperCase();
+    }
+    
+    if (settings.timezone) {
+      payload.timezone = settings.timezone;
+    }
+
     return request<User>({
       method: 'PATCH',
       url: '/auth/settings',
-      data: settings,
+      data: payload,
     });
   },
 

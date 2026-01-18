@@ -12,6 +12,7 @@ import emailRoutes from './routes/email.routes.js';
 import calendarRoutes from './routes/calendar.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import taskRoutes from './routes/task.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
 
 // Create Express application
 const app: Express = express();
@@ -140,6 +141,7 @@ app.use(`${API_PREFIX}/emails`, emailRoutes);
 app.use(`${API_PREFIX}/calendar`, calendarRoutes);
 app.use(`${API_PREFIX}/chat`, chatRoutes);
 app.use(`${API_PREFIX}/tasks`, taskRoutes);
+app.use(`${API_PREFIX}/settings`, settingsRoutes);
 
 // =============================================================================
 // Error Handling

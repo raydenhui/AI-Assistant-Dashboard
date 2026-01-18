@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -45,13 +46,19 @@ export default {
           light: '#fff3cd',
           dark: '#856404',
         },
-        // UI colors
-        background: '#F5F5F5',
-        widget: '#FFFFFF',
-        border: '#E0E0E0',
+        // UI colors - using CSS variables for dark mode support
+        background: {
+          DEFAULT: 'var(--color-background)',
+        },
+        widget: {
+          DEFAULT: 'var(--color-widget)',
+        },
+        border: {
+          DEFAULT: 'var(--color-border)',
+        },
         // Chat colors
-        'chat-ai': '#e0f2f7',
-        'chat-user': '#f0f0f0',
+        'chat-ai': 'var(--color-chat-ai)',
+        'chat-user': 'var(--color-chat-user)',
       },
       fontFamily: {
         sans: ['Segoe UI', 'Tahoma', 'Geneva', 'Verdana', 'sans-serif'],

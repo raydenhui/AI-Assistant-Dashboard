@@ -225,16 +225,26 @@ export async function syncEmailsFromGmail(
 
 /**
  * Format cached email for API response
+ *
+ * Note: The frontend expects `sender` as a string and `aiAnalysis` for AI data.
+ * We format the sender as "Name <email>" or just email if name is not available.
  */
 function formatEmailResponse(
   email: CachedEmail,
   includeBody: boolean = false
 ): Record<string, unknown> {
+  // Format sender as string: "Name <email>" or just email
+  const senderString = email.sender && email.sender !== email.senderEmail
+    ? `${email.sender} <${email.senderEmail}>`
+    : email.senderEmail || email.sender;
+
   const response: Record<string, unknown> = {
     id: email.gmailId,
+    gmailId: email.gmailId,
     threadId: email.threadId,
     subject: email.subject,
-    sender: {
+    sender: senderString,
+    senderDetails: {
       name: email.sender,
       email: email.senderEmail,
     },
@@ -245,6 +255,7 @@ function formatEmailResponse(
     isStarred: email.isStarred,
     hasAttachments: email.hasAttachments,
     receivedAt: email.receivedAt.toISOString(),
+    cachedAt: email.cachedAt.toISOString(),
   };
 
   // Include body if requested (for single email view)
@@ -253,13 +264,17 @@ function formatEmailResponse(
     response.bodyType = email.bodyType;
   }
 
-  // Include AI analysis if available
+  // Include AI analysis if available - use `aiAnalysis` to match frontend type
   if (email.aiPriority || email.aiSummary || email.aiActionItems) {
-    response.analysis = {
+    // Cast aiCategories to array if it exists
+    const categories = Array.isArray(email.aiCategories) ? email.aiCategories as string[] : null;
+    
+    response.aiAnalysis = {
       priority: email.aiPriority,
       summary: email.aiSummary,
       actionItems: email.aiActionItems,
-      categories: email.aiCategories,
+      category: categories?.[0] || null,
+      categories: categories,
       analyzedAt: email.analyzedAt?.toISOString(),
     };
   }

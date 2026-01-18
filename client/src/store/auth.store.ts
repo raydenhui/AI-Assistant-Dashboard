@@ -34,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
           const status: AuthStatus = await authApi.getStatus();
           
           if (status.authenticated && status.user) {
+            console.log('[AuthStore] Auth check successful, user:', status.user);
             set({
               user: status.user,
               isAuthenticated: true,

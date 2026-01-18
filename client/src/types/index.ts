@@ -5,6 +5,9 @@ export interface User {
   name: string | null;
   llmProvider: 'openrouter' | 'ollama';
   llmModel: string | null;
+  openRouterKey: string | null;
+  theme: 'LIGHT' | 'DARK' | 'SYSTEM' | null;
+  timezone: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -189,4 +192,13 @@ export interface PaginatedResponse<T> {
 export interface LLMSettings {
   provider: 'openrouter' | 'ollama';
   model: string;
+}
+
+// User Settings Update types
+export interface UserSettingsUpdate {
+  provider?: 'openrouter' | 'ollama';
+  model?: string;
+  openRouterKey?: string;
+  theme?: 'LIGHT' | 'DARK' | 'SYSTEM';
+  timezone?: string;
 }

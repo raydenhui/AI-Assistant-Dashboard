@@ -38,10 +38,10 @@ export function ChatPanel() {
   };
 
   return (
-    <div className="widget h-full flex flex-col !p-0">
+    <div className="widget h-full flex flex-col !p-0 overflow-hidden">
       {/* Chat Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-        <span className="text-lg font-semibold text-gray-800">AI Chat</span>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border dark:border-slate-700">
+        <span className="text-lg font-semibold text-gray-800 dark:text-white">AI Chat</span>
         <button
           onClick={handleNewChat}
           className="btn-outline rounded-full px-4 py-2 text-sm flex items-center gap-2"
@@ -54,7 +54,7 @@ export function ChatPanel() {
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
         {messages.length === 0 ? (
-          <div className="chat-bubble chat-bubble-ai">
+          <div className="chat-bubble chat-bubble-ai dark:text-slate-200">
             Hello! How can I help you manage your workday today?
           </div>
         ) : (
@@ -64,7 +64,7 @@ export function ChatPanel() {
             ))}
             {/* Streaming message */}
             {isStreaming && streamingContent && (
-              <div className="chat-bubble chat-bubble-ai">
+              <div className="chat-bubble chat-bubble-ai dark:text-slate-200">
                 {streamingContent}
                 <span className="inline-block w-2 h-4 bg-primary ml-1 animate-pulse"></span>
               </div>
@@ -74,7 +74,7 @@ export function ChatPanel() {
         
         {/* Loading indicator */}
         {isLoading && !isStreaming && (
-          <div className="chat-bubble chat-bubble-ai flex items-center gap-2">
+          <div className="chat-bubble chat-bubble-ai flex items-center gap-2 dark:text-slate-200">
             <div className="spinner !w-4 !h-4"></div>
             <span>Thinking...</span>
           </div>
@@ -86,7 +86,7 @@ export function ChatPanel() {
       {/* Chat Input */}
       <form
         onSubmit={handleSubmit}
-        className="border-t border-border px-5 py-4 flex gap-3"
+        className="border-t border-border px-5 py-4 flex gap-3 dark:border-slate-700"
       >
         <input
           ref={inputRef}
@@ -95,7 +95,7 @@ export function ChatPanel() {
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="Ask your AI assistant..."
           disabled={isLoading || isStreaming}
-          className="flex-1 border border-border rounded-full px-4 py-2.5 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:bg-gray-50 disabled:cursor-not-allowed"
+          className="flex-1 border border-border rounded-full px-4 py-2.5 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:bg-gray-50 disabled:cursor-not-allowed dark:bg-slate-800 dark:border-slate-600 dark:text-white dark:disabled:bg-slate-900"
         />
         <button
           type="submit"

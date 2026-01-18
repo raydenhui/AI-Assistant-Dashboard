@@ -24,7 +24,7 @@ const envSchema = z.object({
   
   // LLM Providers
   OPENROUTER_API_KEY: z.string().optional(),
-  OPENROUTER_DEFAULT_MODEL: z.string().default('anthropic/claude-3.5-sonnet'),
+  OPENROUTER_DEFAULT_MODEL: z.string().default('google/gemini-3-flash-preview'),
   OPENROUTER_BASE_URL: z.string().default('https://openrouter.ai/api/v1'),
   
   OLLAMA_BASE_URL: z.string().default('http://localhost:11434'),

@@ -83,7 +83,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }));
 
     try {
+      console.log('[ChatStore] Sending message:', message, 'Conversation ID:', currentConversation?.id);
       const response = await chatApi.sendMessage(message, currentConversation?.id);
+      console.log('[ChatStore] Received response:', response);
       
       set((state) => ({
         currentConversation: response.conversation,
@@ -94,9 +96,11 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       // Update conversations list
       get().fetchConversations();
     } catch (error) {
+      console.error('[ChatStore] Error sending message:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
       set((state) => ({
-        messages: state.messages.filter(m => !m.id.startsWith('temp-')),
+        // Keep the user message but remove the loading state and show error
+        messages: state.messages.map(m => m.id === userMessage.id ? { ...m, error: true } : m),
         error: errorMessage,
         isLoading: false,
       }));

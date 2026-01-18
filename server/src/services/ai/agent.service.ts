@@ -188,7 +188,20 @@ export async function chat(request: ChatRequest): Promise<ChatResponse> {
   };
 
   // Call LLM with tool support
-  let response = await llmService.chat(userId, chatOptions);
+  console.log(`[AgentService] Calling LLM for user ${userId} with ${messages.length} messages`);
+  let response;
+  try {
+    response = await llmService.chat(userId, chatOptions);
+    console.log(`[AgentService] LLM response received:`, {
+      id: response.id,
+      model: response.model,
+      hasContent: !!response.content,
+      toolCalls: response.tool_calls?.length || 0
+    });
+  } catch (error) {
+    console.error(`[AgentService] LLM call failed for user ${userId}:`, error);
+    throw error;
+  }
 
   // Handle tool calls in a loop
   const maxToolIterations = 10;

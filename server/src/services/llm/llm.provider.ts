@@ -46,17 +46,17 @@ export abstract class LLMProvider {
   /**
    * Check if the provider is available and working
    */
-  abstract isAvailable(): Promise<boolean>;
+  abstract isAvailable(apiKey?: string): Promise<boolean>;
 
   /**
    * Get detailed health status
    */
-  abstract getHealthStatus(): Promise<ProviderHealthStatus>;
+  abstract getHealthStatus(apiKey?: string): Promise<ProviderHealthStatus>;
 
   /**
    * List available models
    */
-  abstract listModels(): Promise<ModelInfo[]>;
+  abstract listModels(apiKey?: string): Promise<ModelInfo[]>;
 
   /**
    * Update configuration

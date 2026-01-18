@@ -58,15 +58,18 @@ class LLMService {
   async getProviderForUser(userId: string): Promise<LLMProvider> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { llmProvider: true, llmSettings: true },
-    });
+    }) as any;
 
     if (!user) {
       throw new BadRequestError('User not found');
     }
 
     const providerType = user.llmProvider.toLowerCase() as LLMProviderType;
-    return this.getProvider(providerType, user.llmSettings as Record<string, unknown> | null);
+    return this.getProvider(
+      providerType,
+      user.llmSettings as Record<string, unknown> | null,
+      user.openRouterKey
+    );
   }
 
   /**
@@ -74,9 +77,22 @@ class LLMService {
    */
   getProvider(
     providerType: LLMProviderType,
-    userSettings?: Record<string, unknown> | null
+    userSettings?: Record<string, unknown> | null,
+    userApiKey?: string | null
   ): LLMProvider {
     let provider = this.providers.get(providerType);
+
+    // If it's openrouter and user has their own key, we MUST create a new instance
+    if (providerType === 'openrouter' && userApiKey) {
+      return new OpenRouterProvider({
+        provider: 'openrouter',
+        model: (userSettings?.model as string) || config.llm.openrouter.defaultModel,
+        apiKey: userApiKey,
+        baseUrl: config.llm.openrouter.baseUrl,
+        temperature: (userSettings?.temperature as number) || undefined,
+        maxTokens: (userSettings?.maxTokens as number) || undefined,
+      });
+    }
 
     if (!provider) {
       throw new BadRequestError(`LLM provider ${providerType} not configured`);
@@ -103,7 +119,7 @@ class LLMService {
           provider = new OpenRouterProvider({
             provider: 'openrouter',
             model: updatedConfig.model || config.llm.openrouter.defaultModel,
-            apiKey: config.llm.openrouter.apiKey,
+            apiKey: userApiKey || config.llm.openrouter.apiKey,
             baseUrl: config.llm.openrouter.baseUrl,
             temperature: updatedConfig.temperature,
             maxTokens: updatedConfig.maxTokens,
@@ -259,6 +275,28 @@ class LLMService {
    */
   getAvailableProviderTypes(): LLMProviderType[] {
     return Array.from(this.providers.keys());
+  }
+
+  /**
+   * Get the OpenRouter provider instance
+   */
+  getOpenRouterProvider(): OpenRouterProvider {
+    const provider = this.providers.get('openrouter');
+    if (!provider || !(provider instanceof OpenRouterProvider)) {
+      throw new BadRequestError('OpenRouter provider not configured');
+    }
+    return provider as OpenRouterProvider;
+  }
+
+  /**
+   * Get the Ollama provider instance
+   */
+  getOllamaProvider(): OllamaProvider {
+    const provider = this.providers.get('ollama');
+    if (!provider || !(provider instanceof OllamaProvider)) {
+      throw new BadRequestError('Ollama provider not configured');
+    }
+    return provider as OllamaProvider;
   }
 }
 
