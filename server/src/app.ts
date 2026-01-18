@@ -8,6 +8,10 @@ import { errorHandler, notFoundHandler } from './middleware/error.middleware.js'
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
+import emailRoutes from './routes/email.routes.js';
+import calendarRoutes from './routes/calendar.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import taskRoutes from './routes/task.routes.js';
 
 // Create Express application
 const app: Express = express();
@@ -132,11 +136,10 @@ app.get(`${API_PREFIX}`, (_req: Request, res: Response) => {
 
 // Register routes
 app.use(`${API_PREFIX}/auth`, authRoutes);
-// Additional routes will be added in later phases:
-// app.use(`${API_PREFIX}/chat`, chatRoutes);
-// app.use(`${API_PREFIX}/emails`, emailRoutes);
-// app.use(`${API_PREFIX}/calendar`, calendarRoutes);
-// app.use(`${API_PREFIX}/tasks`, taskRoutes);
+app.use(`${API_PREFIX}/emails`, emailRoutes);
+app.use(`${API_PREFIX}/calendar`, calendarRoutes);
+app.use(`${API_PREFIX}/chat`, chatRoutes);
+app.use(`${API_PREFIX}/tasks`, taskRoutes);
 
 // =============================================================================
 // Error Handling
