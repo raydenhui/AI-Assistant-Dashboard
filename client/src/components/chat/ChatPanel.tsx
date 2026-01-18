@@ -1,18 +1,31 @@
 import { useState, useRef, useEffect } from 'react';
 import { useChatStore } from '../../store';
 import { ChatMessage } from './ChatMessage';
-
 export function ChatPanel() {
   const {
     messages,
+    conversations,
+    currentConversation,
     isLoading,
     isStreaming,
     streamingContent,
+    fetchConversations,
+    selectConversation,
     sendMessage,
     createNewChat,
+    deleteConversation,
   } = useChatStore();
   
   const [inputValue, setInputValue] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  
+  // Debug logging
+  useEffect(() => {
+    if (showHistory) {
+      console.log('[ChatPanel] History opened. Conversations:', conversations);
+    }
+  }, [showHistory, conversations]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -20,6 +33,11 @@ export function ChatPanel() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
+
+  // Fetch conversations on mount
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,10 +56,28 @@ export function ChatPanel() {
   };
 
   return (
-    <div className="widget h-full flex flex-col !p-0 overflow-hidden">
+    <div className="widget h-full flex flex-col !p-0 overflow-hidden relative">
       {/* Chat Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border dark:border-slate-700">
-        <span className="text-lg font-semibold text-gray-800 dark:text-white">AI Chat</span>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border dark:border-slate-700 bg-white dark:bg-slate-800 z-10">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              console.log('[ChatPanel] Toggle history button clicked. Current state:', showHistory);
+              setShowHistory(!showHistory);
+            }}
+            className={`p-2 rounded-lg transition-colors ${
+              showHistory
+                ? 'bg-primary/10 text-primary'
+                : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400'
+            }`}
+            title="Chat History"
+          >
+            <i className="fas fa-history"></i>
+          </button>
+          <span className="text-lg font-semibold text-gray-800 dark:text-white">
+            {currentConversation?.title || 'AI Chat'}
+          </span>
+        </div>
         <button
           onClick={handleNewChat}
           className="btn-outline rounded-full px-4 py-2 text-sm flex items-center gap-2"
@@ -50,6 +86,69 @@ export function ChatPanel() {
           New Chat
         </button>
       </div>
+
+      {/* Chat History Overlay */}
+      {showHistory && (
+        <div className="absolute inset-0 top-[65px] z-20 bg-white dark:bg-slate-800 border-r border-border dark:border-slate-700 flex flex-col">
+          <div className="p-4 border-b border-border dark:border-slate-700 flex justify-between items-center">
+            <h3 className="font-medium text-gray-700 dark:text-slate-200">Recent Conversations</h3>
+            <button
+              onClick={() => setShowHistory(false)}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200"
+              title="Close History"
+              aria-label="Close History"
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {!Array.isArray(conversations) || conversations.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-slate-400">
+                <p>No history yet</p>
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`group flex items-center justify-between p-4 cursor-pointer border-b border-border/50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${
+                      currentConversation?.id === conv.id ? 'bg-primary/5 border-l-4 border-l-primary' : ''
+                    }`}
+                    onClick={() => {
+                      if (conv.id) {
+                        selectConversation(conv.id);
+                        setShowHistory(false);
+                      }
+                    }}
+                  >
+                    <div className="flex flex-col gap-1 overflow-hidden">
+                      <span className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">
+                        {conv.title}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">
+                        {conv.updatedAt ? new Date(conv.updatedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'No date'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm('Delete this conversation?')) {
+                          if (conv.id) deleteConversation(conv.id);
+                        }
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-2 text-gray-400 hover:text-red-500 transition-all"
+                      title="Delete Conversation"
+                      aria-label="Delete Conversation"
+                    >
+                      <i className="fas fa-trash-alt text-xs"></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">

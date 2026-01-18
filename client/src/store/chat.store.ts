@@ -37,7 +37,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   fetchConversations: async () => {
     try {
       set({ isLoading: true, error: null });
-      const conversations = await chatApi.listConversations();
+      const response = await chatApi.listConversations();
+      // Ensure conversations is always an array
+      const conversations = Array.isArray(response) ? response : (response as any)?.conversations || [];
       set({ conversations, isLoading: false });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch conversations';
