@@ -37,7 +37,7 @@ An intelligent productivity dashboard that integrates Gmail and Google Calendar 
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - Docker & Docker Compose (for PostgreSQL)
 - Google Cloud Console project with Gmail and Calendar APIs enabled
 - OpenRouter API key (for cloud LLM) or Ollama installed (for local LLM)
@@ -109,7 +109,7 @@ The frontend will be available at `http://localhost:5173`
 
 ## Project Structure
 
-```
+```tree
 AI-Assistant-Dashboard/
 ├── client/                     # Frontend React application
 │   ├── src/
@@ -145,37 +145,44 @@ AI-Assistant-Dashboard/
 ## API Endpoints
 
 ### Health Check
+
 - `GET /health` - Basic health check
 - `GET /health/detailed` - Detailed health with service status
 
 ### Authentication
+
 - `GET /api/auth/google` - Initiate Google OAuth
 - `GET /api/auth/google/callback` - OAuth callback
 - `POST /api/auth/logout` - Logout user
 - `GET /api/auth/status` - Check auth status
 
 ### Chat
+
 - `GET /api/chat/conversations` - List conversations
 - `POST /api/chat/conversations` - Create conversation
 - `POST /api/chat/conversations/:id/messages` - Send message
 
 ### Emails
+
 - `GET /api/emails` - List emails
 - `GET /api/emails/prioritized` - Get AI-prioritized emails
 - `POST /api/emails/sync` - Sync from Gmail
 
 ### Calendar
+
 - `GET /api/calendar/events` - List events
 - `POST /api/calendar/events` - Create event
 - `POST /api/calendar/sync` - Sync from Google Calendar
 
 ### Tasks
+
 - `GET /api/tasks` - List tasks
 - `POST /api/tasks` - Create task
 - `PATCH /api/tasks/:id` - Update task
 - `DELETE /api/tasks/:id` - Delete task
 
 ### Settings
+
 - `GET /api/settings` - Get user settings
 - `PATCH /api/settings` - Update settings
 - `GET /api/settings/llm/status` - Check LLM provider status
@@ -194,11 +201,13 @@ AI-Assistant-Dashboard/
 ### LLM Provider Setup
 
 #### OpenRouter (Cloud)
+
 1. Sign up at [OpenRouter](https://openrouter.ai/)
 2. Generate an API key
 3. Add to `.env`: `OPENROUTER_API_KEY=your-key`
 
 #### Ollama (Local)
+
 1. Install Ollama from [ollama.ai](https://ollama.ai/)
 2. Pull a model: `ollama pull llama3.2`
 3. Ensure Ollama is running on `http://localhost:11434`
@@ -208,6 +217,7 @@ AI-Assistant-Dashboard/
 ### Available Scripts
 
 #### Server
+
 ```bash
 npm run dev          # Start development server with hot reload
 npm run build        # Build for production
@@ -219,6 +229,7 @@ npm run db:studio    # Open Prisma Studio
 ```
 
 #### Client
+
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
@@ -241,6 +252,7 @@ cd server && npm run db:studio
 ### Local Deployment
 
 The application is configured to run locally by default. Ensure:
+
 1. PostgreSQL is running (via Docker or locally)
 2. Environment variables are set
 3. Backend and frontend are started
