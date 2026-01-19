@@ -5,12 +5,14 @@ An intelligent productivity dashboard that integrates Gmail and Google Calendar 
 ## Features
 
 ### Core Functionality
+
 - 📧 **Email Integration** - Connect with Gmail to view and manage emails
 - 📅 **Calendar Integration** - Sync with Google Calendar for events and scheduling
 - ✅ **Task Management** - Create, track, and complete action items
 - 💬 **AI Chat Assistant** - Conversational interface for productivity assistance
 
 ### AI-Powered Features
+
 - 🎯 **Email Prioritization** - AI analyzes and ranks emails by importance
 - 📋 **Action Item Extraction** - Automatically identify tasks from emails
 - 📊 **Daily Briefing** - AI-generated summary of your day
@@ -19,6 +21,7 @@ An intelligent productivity dashboard that integrates Gmail and Google Calendar 
 - ⏰ **Focus Time Analysis** - Identify optimal time blocks for deep work
 
 ### Privacy & Flexibility
+
 - 🔒 **Privacy-Centric** - Choose between cloud or local LLM processing
 - 🌐 **OpenRouter Support** - Access various cloud AI models
 - 🏠 **Ollama Support** - Run AI locally for complete data privacy
@@ -134,7 +137,6 @@ AI-Assistant-Dashboard/
 │   │   └── schema.prisma       # Database schema
 │   └── ...
 │
-├── plans/                      # Documentation & plans
 ├── docker-compose.yml          # Docker services
 ├── .env.example                # Environment template
 └── README.md
@@ -249,21 +251,3 @@ The application is configured to run locally by default. Ensure:
 2. Configure production environment variables
 3. Set up PostgreSQL database
 4. Deploy to your preferred hosting platform
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Built as a final year project
-- Inspired by the need for privacy-centric productivity tools
-- Thanks to the open-source community for the amazing tools and libraries
