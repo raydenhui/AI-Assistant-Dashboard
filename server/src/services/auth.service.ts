@@ -240,7 +240,7 @@ export async function updateUserSettings(
   if (settings.llmSettings !== undefined) {
     updateData.llmSettings = settings.llmSettings;
   }
-  if (settings.openRouterKey !== undefined && settings.openRouterKey !== '' && !settings.openRouterKey.includes('•')) {
+  if (settings.openRouterKey !== undefined && settings.openRouterKey !== null && settings.openRouterKey !== '' && !settings.openRouterKey.includes('•')) {
     updateData.openRouterKey = settings.openRouterKey;
   }
   if (settings.theme !== undefined) {
