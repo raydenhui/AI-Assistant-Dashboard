@@ -171,7 +171,10 @@ export async function chat(request: ChatRequest): Promise<ChatResponse> {
     }),
   };
 
-  const conversationMessages = dbMessagesToLLMMessages(conversation.messages);
+  // Limit conversation history to last 10 messages to save tokens
+  const maxHistory = 10;
+  const recentMessages = conversation.messages.slice(-maxHistory);
+  const conversationMessages = dbMessagesToLLMMessages(recentMessages);
   const messages: ChatMessage[] = [systemMessage, ...conversationMessages];
 
   // Get tool definitions
@@ -351,9 +354,12 @@ export async function chatStream(request: ChatRequest): Promise<StreamChatRespon
     }),
   };
 
-  const conversationMessages = dbMessagesToLLMMessages(
-    conversation.messages.filter(m => m.id !== assistantMessage.id)
-  );
+  // Limit conversation history to last 10 messages to save tokens
+  const maxHistory = 10;
+  const recentMessages = conversation.messages
+    .filter(m => m.id !== assistantMessage.id)
+    .slice(-maxHistory);
+  const conversationMessages = dbMessagesToLLMMessages(recentMessages);
   const messages: ChatMessage[] = [systemMessage, ...conversationMessages];
 
   // Get tool definitions

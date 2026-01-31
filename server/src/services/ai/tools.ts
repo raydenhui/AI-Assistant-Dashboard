@@ -478,7 +478,17 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
         emails = result.emails;
       }
       
-      return { success: true, data: emails };
+      // Return only essential fields to save tokens
+      const conciseEmails = emails.map(e => ({
+        id: e.gmailId,
+        subject: e.subject,
+        sender: e.sender,
+        receivedAt: e.receivedAt,
+        snippet: e.snippet,
+        isRead: e.isRead,
+      }));
+      
+      return { success: true, data: conciseEmails };
     } catch (error) {
       return {
         success: false,
@@ -536,7 +546,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
             sender: e.sender,
             senderEmail: e.senderEmail,
             snippet: e.snippet,
-            body: e.body,
+            body: e.body ? e.body.substring(0, 2000) : undefined, // Limit body length
             receivedAt: e.receivedAt,
             isRead: e.isRead,
           })),
@@ -564,7 +574,8 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
         );
         const emails = results.filter((e): e is CachedEmail => e !== null);
         emails.forEach((e) => {
-          content.push(`From: ${e.sender}\nSubject: ${e.subject}\n\n${e.body || e.snippet}`);
+          const body = e.body ? e.body.substring(0, 2000) : e.snippet;
+          content.push(`From: ${e.sender}\nSubject: ${e.subject}\n\n${body}`);
         });
       }
       
@@ -605,7 +616,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
             subject: email.subject,
             sender: email.sender,
             senderEmail: email.senderEmail,
-            body: email.body || email.snippet,
+            body: email.body ? email.body.substring(0, 3000) : email.snippet,
             receivedAt: email.receivedAt,
           },
           userIntent: intent,
@@ -635,7 +646,17 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
         timeMax: endDate,
       });
       
-      return { success: true, data: result.events };
+      // Return only essential fields to save tokens
+      const conciseEvents = result.events.map(e => ({
+        id: e.calendarId,
+        title: e.title,
+        startTime: e.startTime,
+        endTime: e.endTime,
+        location: e.location,
+        status: e.status,
+      }));
+      
+      return { success: true, data: conciseEvents };
     } catch (error) {
       return {
         success: false,
@@ -757,7 +778,16 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
         ],
       });
       
-      return { success: true, data: tasks };
+      // Return only essential fields to save tokens
+      const conciseTasks = tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        dueDate: t.dueDate,
+      }));
+      
+      return { success: true, data: conciseTasks };
     } catch (error) {
       return {
         success: false,
@@ -890,22 +920,26 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
           timeMax: weekAhead,
         });
         
-        briefingData.todaysEvents = todaysResult.events;
-        briefingData.upcomingEvents = upcomingResult.events;
+        briefingData.todaysEvents = todaysResult.events.map(e => ({
+          title: e.title,
+          startTime: e.startTime,
+          endTime: e.endTime,
+        }));
+        briefingData.upcomingEvents = upcomingResult.events.map(e => ({
+          title: e.title,
+          startTime: e.startTime,
+        }));
       }
       
       // Fetch recent emails
       if (includeEmailSummary) {
         const emailResult = await gmail.listEmails(context.user.id, {
-          maxResults: 20,
+          maxResults: 10, // Reduced from 20
         });
         briefingData.recentEmails = emailResult.emails.map(e => ({
-          id: e.gmailId,
           subject: e.subject,
           sender: e.sender,
           snippet: e.snippet,
-          receivedAt: e.receivedAt,
-          isRead: e.isRead,
         }));
       }
       
@@ -920,8 +954,13 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
             { dueDate: 'asc' },
             { priority: 'desc' },
           ],
+          take: 15, // Limit number of tasks
         });
-        briefingData.pendingTasks = tasks;
+        briefingData.pendingTasks = tasks.map(t => ({
+          title: t.title,
+          dueDate: t.dueDate,
+          priority: t.priority,
+        }));
       }
       
       return {
