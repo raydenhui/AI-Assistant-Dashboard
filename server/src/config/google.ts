@@ -19,7 +19,7 @@ export function createOAuth2Client(): Auth.OAuth2Client {
 export function getAuthUrl(oauth2Client: Auth.OAuth2Client): string {
   return oauth2Client.generateAuthUrl({
     access_type: 'offline', // Get refresh token
-    scope: config.google.scopes,
+    scope: [...config.google.scopes],
     prompt: 'consent', // Force consent screen to get refresh token
     include_granted_scopes: true,
   });
