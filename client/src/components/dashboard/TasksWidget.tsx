@@ -122,11 +122,11 @@ export function TasksWidget() {
         </div>
 
         {isLoading && tasks.length === 0 ? (
-          <div className="flex justify-center py-8">
+          <div className="flex-1 flex items-center justify-center">
             <div className="spinner"></div>
           </div>
         ) : error ? (
-          <div className="text-center py-8 text-gray-500 dark:text-slate-400">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-gray-500 dark:text-slate-400">
             <i className="fas fa-exclamation-circle text-danger text-2xl mb-2"></i>
             <p className="text-sm">{error}</p>
             <button onClick={() => refresh()} className="text-primary text-sm mt-2 hover:underline">
@@ -134,7 +134,7 @@ export function TasksWidget() {
             </button>
           </div>
         ) : tasks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-slate-400">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-gray-500 dark:text-slate-400">
             <i className="fas fa-check-circle text-3xl mb-2"></i>
             <p>No tasks yet</p>
             <button onClick={() => setShowAddTask(true)} className="text-primary text-sm mt-2 hover:underline">
@@ -143,7 +143,7 @@ export function TasksWidget() {
           </div>
         ) : (
           <>
-            <ul className="divide-y divide-border">
+            <ul className="widget-content divide-y divide-border">
               {sortedTasks.slice(0, 5).map((task) => (
                 <li key={task.id} className="py-3 first:pt-0 last:pb-0 group">
                   {/* Main row */}

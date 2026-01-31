@@ -65,11 +65,15 @@
 
   /* Widget card */
   .widget {
-    @apply bg-widget rounded-lg shadow-widget p-5 overflow-hidden border border-border transition-colors duration-200;
+    @apply bg-widget rounded-lg shadow-widget p-5 overflow-hidden border border-border transition-colors duration-200 h-full flex flex-col;
   }
 
   .widget-header {
-    @apply text-lg font-semibold mb-4 flex justify-between items-center border-b border-border pb-2.5 transition-colors duration-200;
+    @apply text-lg font-semibold mb-4 flex justify-between items-center border-b border-border pb-2.5 transition-colors duration-200 flex-shrink-0;
+  }
+
+  .widget-content {
+    @apply flex-1 overflow-y-auto min-h-0;
   }
 
   /* Priority badges */

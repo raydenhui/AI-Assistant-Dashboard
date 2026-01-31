@@ -128,11 +128,11 @@ export function ScheduleWidget() {
         </div>
 
         {isLoading && events.length === 0 ? (
-          <div className="flex justify-center py-8">
+          <div className="flex-1 flex items-center justify-center">
             <div className="spinner"></div>
           </div>
         ) : error ? (
-          <div className="text-center py-8 text-gray-500 dark:text-slate-400">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-gray-500 dark:text-slate-400">
             <i className="fas fa-exclamation-circle text-danger text-2xl mb-2"></i>
             <p className="text-sm">{error}</p>
             <button onClick={() => refresh()} className="text-primary text-sm mt-2 hover:underline">
@@ -140,10 +140,10 @@ export function ScheduleWidget() {
             </button>
           </div>
         ) : events.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-slate-400">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-gray-500 dark:text-slate-400">
             <i className="fas fa-calendar-check text-3xl mb-2"></i>
             <p>No events scheduled for today</p>
-            <button 
+            <button
               onClick={() => setShowViewAll(true)}
               className="text-primary text-sm mt-2 hover:underline"
             >
@@ -151,7 +151,7 @@ export function ScheduleWidget() {
             </button>
           </div>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="widget-content divide-y divide-border">
             {sortedEvents.slice(0, 4).map((event) => {
               const happeningNow = isHappeningNow(event.startTime, event.endTime);
               const comingUp = isUpcoming(event.startTime);
