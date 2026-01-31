@@ -77,6 +77,22 @@
     @apply px-2 py-0.5 rounded text-xs font-bold text-white whitespace-nowrap;
   }
 
+  .priority-urgent {
+    @apply bg-danger;
+  }
+
+  .priority-important {
+    @apply bg-warning text-gray-800;
+  }
+
+  .priority-normal {
+    @apply bg-primary;
+  }
+
+  .priority-unrelevent {
+    @apply bg-secondary;
+  }
+
   .priority-high {
     @apply bg-danger;
   }

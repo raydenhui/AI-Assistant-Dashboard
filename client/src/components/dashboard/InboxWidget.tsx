@@ -20,6 +20,12 @@ export function InboxWidget() {
     async () => {
       try {
         setIsLoading(true);
+        // Trigger a quick sync before fetching prioritized emails
+        try {
+          await emailsApi.sync(10);
+        } catch (syncErr) {
+          console.warn('Background sync failed:', syncErr);
+        }
         const data = await emailsApi.getPrioritized();
         setEmails(data);
         setError(null);
@@ -42,13 +48,26 @@ export function InboxWidget() {
     }
   );
 
-  const handleDismiss = (id: string) => {
-    setEmails(emails.filter(e => e.id !== id));
-    toast.info('Email removed from view');
+  const handleDismiss = async (id: string) => {
+    try {
+      await emailsApi.dismiss(id);
+      setEmails(emails.filter(e => e.id !== id));
+      toast.info('Email removed from prioritized inbox');
+    } catch (err) {
+      toast.error('Failed to dismiss email');
+    }
   };
 
   const getPriorityClass = (priority?: string) => {
-    switch (priority) {
+    switch (priority?.toLowerCase()) {
+      case 'urgent':
+        return 'priority-urgent';
+      case 'important':
+        return 'priority-important';
+      case 'normal':
+        return 'priority-normal';
+      case 'unrelevent':
+        return 'priority-unrelevent';
       case 'high':
         return 'priority-high';
       case 'medium':
@@ -59,7 +78,15 @@ export function InboxWidget() {
   };
 
   const getPriorityLabel = (priority?: string) => {
-    switch (priority) {
+    switch (priority?.toLowerCase()) {
+      case 'urgent':
+        return 'Urgent';
+      case 'important':
+        return 'Important';
+      case 'normal':
+        return 'Normal';
+      case 'unrelevent':
+        return 'Unrelevent';
       case 'high':
         return 'High Priority';
       case 'medium':
@@ -74,7 +101,14 @@ export function InboxWidget() {
     const now = new Date();
     const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffHours < 1) return 'Just now';
+    if (diffHours < 1) {
+      if (Math.floor((now.getTime() - date.getTime()) / (1000 * 60)) < 1) {
+        return 'Just now'
+      } else {
+        const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));  
+        return `${diffMinutes} minutes ago`;
+      }
+    };
     if (diffHours < 24) return `${diffHours} hours ago`;
     if (diffHours < 48) return 'Yesterday';
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

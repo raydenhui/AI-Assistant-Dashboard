@@ -296,6 +296,14 @@ export const emailsApi = {
       data: { maxResults },
     });
   },
+
+  // Dismiss an email
+  dismiss: async (id: string): Promise<void> => {
+    await request<void>({
+      method: 'PATCH',
+      url: `/emails/${id}/dismiss`,
+    });
+  },
 };
 
 // ==================== Calendar API ====================

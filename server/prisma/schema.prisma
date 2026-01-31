@@ -138,6 +138,7 @@ model CachedEmail {
   isRead      Boolean  @default(false)
   isStarred   Boolean  @default(false)
   hasAttachments Boolean @default(false)
+  isDismissed Boolean @default(false)
   
   // AI Analysis results
   aiPriority  Priority?

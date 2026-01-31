@@ -71,7 +71,11 @@ export function ViewAllEmailsModal({ isOpen, onClose }: ViewAllEmailsModalProps)
   };
 
   const getPriorityColor = (priority?: string) => {
-    switch (priority) {
+    switch (priority?.toLowerCase()) {
+      case 'urgent': return 'bg-danger';
+      case 'important': return 'bg-warning text-gray-800';
+      case 'normal': return 'bg-primary';
+      case 'unrelevent': return 'bg-secondary';
       case 'high': return 'bg-danger';
       case 'medium': return 'bg-warning text-gray-800';
       case 'low': return 'bg-secondary';

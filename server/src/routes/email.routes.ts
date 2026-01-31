@@ -6,6 +6,7 @@ import {
   getEmailThread,
   searchEmailsByQuery,
   syncEmailsFromGmail,
+  dismissEmail,
 } from '../controllers/email.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
@@ -61,5 +62,12 @@ router.post('/sync', requireAuth, asyncHandler(syncEmailsFromGmail));
  * @access  Private
  */
 router.get('/:id', requireAuth, asyncHandler(getEmailById));
+
+/**
+ * @route   PATCH /api/emails/:id/dismiss
+ * @desc    Dismiss an email from the prioritized inbox
+ * @access  Private
+ */
+router.patch('/:id/dismiss', requireAuth, asyncHandler(dismissEmail));
 
 export default router;

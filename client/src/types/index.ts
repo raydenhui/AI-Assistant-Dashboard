@@ -82,7 +82,7 @@ export interface Email {
 }
 
 export interface EmailAIAnalysis {
-  priority?: 'high' | 'medium' | 'low';
+  priority?: 'urgent' | 'important' | 'normal' | 'unrelevent' | 'high' | 'medium' | 'low';
   summary?: string;
   actionItems?: string[];
   category?: string;

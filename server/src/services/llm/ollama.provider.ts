@@ -72,6 +72,10 @@ export class OllamaProvider extends LLMProvider {
       body.tools = options.tools;
     }
 
+    if (options.response_format?.type === 'json_object') {
+      body.format = 'json';
+    }
+
     return body;
   }
 

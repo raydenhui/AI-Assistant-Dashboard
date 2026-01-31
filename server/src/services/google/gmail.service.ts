@@ -1,6 +1,7 @@
 import { google, gmail_v1 } from 'googleapis';
 import { Auth } from 'googleapis';
 import { CachedEmail, Priority } from '@prisma/client';
+import { EmailAnalysisService } from '../ai/email-analysis.service.js';
 import prisma from '../../config/database.js';
 import { getAuthenticatedGoogleClient } from '../auth.service.js';
 
@@ -454,6 +455,7 @@ export async function syncEmails(userId: string, maxResults: number = 50): Promi
     });
 
     const messages = listResponse.data.messages || [];
+    const newEmails: CachedEmail[] = [];
 
     for (const msg of messages) {
       if (!msg.id) continue;
@@ -487,7 +489,7 @@ export async function syncEmails(userId: string, maxResults: number = 50): Promi
           result.updated++;
         } else {
           // Create new
-          await prisma.cachedEmail.create({
+          const newEmail = await prisma.cachedEmail.create({
             data: {
               userId,
               gmailId: details.id,
@@ -506,6 +508,7 @@ export async function syncEmails(userId: string, maxResults: number = 50): Promi
               receivedAt: details.receivedAt,
             },
           });
+          newEmails.push(newEmail);
           result.created++;
         }
 
@@ -515,6 +518,45 @@ export async function syncEmails(userId: string, maxResults: number = 50): Promi
         result.errors.push(`Failed to sync email ${msg.id}: ${errorMessage}`);
       }
     }
+
+    // Analyze new emails and any existing un-analyzed emails
+    // Sort by receivedAt desc to ensure newest are processed first
+    const unanalyzedEmails = await prisma.cachedEmail.findMany({
+      where: {
+        userId,
+        aiPriority: null,
+      },
+      orderBy: { receivedAt: 'desc' },
+      take: 20,
+    });
+
+    if (unanalyzedEmails.length > 0) {
+      await EmailAnalysisService.analyzeEmails(userId, unanalyzedEmails);
+    }
+
+    // Also trigger re-evaluation of old emails
+    await EmailAnalysisService.reevaluatePriorities(userId);
+
+    // Enforce 30-email limit
+    const emailCount = await prisma.cachedEmail.count({ where: { userId } });
+    if (emailCount > 30) {
+      const emailsToDelete = await prisma.cachedEmail.findMany({
+        where: { userId },
+        orderBy: { receivedAt: 'desc' },
+        skip: 30,
+        select: { id: true },
+      });
+
+      if (emailsToDelete.length > 0) {
+        await prisma.cachedEmail.deleteMany({
+          where: {
+            id: { in: emailsToDelete.map(e => e.id) },
+          },
+        });
+        console.log(`[GmailService] Deleted ${emailsToDelete.length} old emails to maintain 30-email limit`);
+      }
+    }
+
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     result.errors.push(`Sync failed: ${errorMessage}`);
@@ -605,7 +647,11 @@ export async function getPrioritizedEmails(userId: string, limit: number = 20): 
   const analyzedEmails = await prisma.cachedEmail.findMany({
     where: {
       userId,
-      aiPriority: { not: null },
+      aiPriority: {
+        not: null,
+        notIn: [Priority.LOW] // Filter out unrelevent emails
+      },
+      isDismissed: false, // Filter out dismissed emails
     },
     take: limit,
   });

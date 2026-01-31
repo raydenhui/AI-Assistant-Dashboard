@@ -72,6 +72,7 @@ export class OpenRouterProvider extends LLMProvider {
     if (options.frequency_penalty !== undefined) body.frequency_penalty = options.frequency_penalty;
     if (options.presence_penalty !== undefined) body.presence_penalty = options.presence_penalty;
     if (options.stop) body.stop = options.stop;
+    if (options.response_format) body.response_format = options.response_format;
 
     return body;
   }

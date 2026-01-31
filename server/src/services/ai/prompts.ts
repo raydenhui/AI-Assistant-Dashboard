@@ -96,24 +96,49 @@ Remember: You're here to save the user time and mental energy. Be their trusted 
 export const EMAIL_PRIORITY_PROMPT = `Analyze the following emails and assign priority levels based on these criteria:
 
 ## Priority Levels:
-- **HIGH**: Urgent requests, time-sensitive matters, VIP senders, blocking issues, deadlines today/tomorrow
-- **MEDIUM**: Important but not urgent, project updates, meeting-related, requires response but not immediately
-- **LOW**: Informational, newsletters, FYI only, can be handled later or delegated
+- **URGENT**: Need users interact with something urgently. Immediate action required, critical deadlines today, or emergency situations.
+- **IMPORTANT**: High priority matters that need attention soon but are not immediate emergencies. Important project updates, client requests, or significant information.
+- **NORMAL**: Standard priority. Requires attention eventually, routine updates, or non-urgent requests.
+- **UNRELEVENT**: Not important information, no need for user interaction. Newsletters, automated notifications, or general information that doesn't require action.
 
-## Analysis Factors:
-1. **Sender Importance**: Manager, client, important stakeholder vs. automated systems, marketing
-2. **Time Sensitivity**: Explicit deadlines, meeting prep, blocking others
-3. **Action Required**: Clear ask/request vs. informational only
-4. **Content Indicators**: Words like "urgent", "ASAP", "deadline", "important", "action required"
-5. **Context**: Related to upcoming meetings, ongoing projects, or critical business matters
+## Guidelines:
+- Most emails should be classified as **UNRELEVENT** since space in the prioritized inbox is limited.
+- Only **URGENT**, **IMPORTANT**, and **NORMAL** emails will be shown in the prioritized inbox.
+- **Login codes, OTPs, or verification codes** that are more than a few minutes old should be marked as **UNRELEVENT** as they are no longer useful.
+- Consider sender importance, time sensitivity, and whether an action is required.
 
 For each email, provide:
-- Priority level (high/medium/low)
-- Brief reason for the priority
-- Any action items identified
-- Suggested response timeframe
+- **Priority**: One of [urgent, important, normal, unrelevent]
+- **Summary**: A very short, concise summary of the email (max 100 characters)
+- **Reason**: Brief explanation for the assigned priority
+- **ActionRequired**: Boolean indicating if the user needs to respond or take action
+- **ActionItems**: An array of objects, each containing:
+    - **Title**: Clear, actionable task title (e.g., "Reply to meeting request", "Review Q4 proposal")
+    - **Description**: Brief context or details
+    - **DueDate**: ISO 8601 date string if a deadline or meeting time is mentioned, otherwise null
+    - **Priority**: Task priority [low, medium, high]
 
-Be concise but informative. Focus on what the user needs to know to make decisions.`;
+Return the analysis in a structured JSON format like this:
+{
+  "results": [
+    {
+      "id": "email_id_here",
+      "priority": "urgent",
+      "summary": "Short summary here",
+      "reason": "Reason here",
+      "actionRequired": true,
+      "actionItems": [
+        {
+          "title": "Task title",
+          "description": "Task description",
+          "dueDate": "2026-02-01T12:00:00Z",
+          "priority": "high"
+        }
+      ]
+    }
+  ]
+}
+`;
 
 /**
  * Prompt for action item extraction

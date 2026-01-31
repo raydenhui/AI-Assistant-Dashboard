@@ -85,6 +85,7 @@ export interface ChatCompletionOptions {
   presence_penalty?: number;
   stop?: string[];
   stream?: boolean;
+  response_format?: { type: 'json_object' | 'text' };
 }
 
 /**

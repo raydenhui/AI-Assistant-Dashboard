@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Priority, CachedEmail } from '@prisma/client';
+import prisma from '../config/database.js';
 import {
   listEmails,
   getEmail,
@@ -224,6 +225,36 @@ export async function syncEmailsFromGmail(
 }
 
 /**
+ * PATCH /api/emails/:id/dismiss
+ * Dismiss an email from the prioritized inbox
+ */
+export async function dismissEmail(
+  req: Request,
+  res: Response
+): Promise<void> {
+  if (!req.userId) {
+    throw new BadRequestError('Not authenticated');
+  }
+
+  const { id } = req.params;
+
+  if (!id || typeof id !== 'string') {
+    throw new BadRequestError('Email ID is required');
+  }
+
+  await prisma.cachedEmail.update({
+    where: { gmailId: id },
+    data: { isDismissed: true },
+  });
+
+  res.json({
+    success: true,
+    data: { id },
+    message: 'Email dismissed',
+  });
+}
+
+/**
  * Format cached email for API response
  *
  * Note: The frontend expects `sender` as a string and `aiAnalysis` for AI data.
@@ -270,7 +301,7 @@ function formatEmailResponse(
     const categories = Array.isArray(email.aiCategories) ? email.aiCategories as string[] : null;
     
     response.aiAnalysis = {
-      priority: email.aiPriority,
+      priority: categories?.[0] || email.aiPriority, // Prefer the tier name from categories
       summary: email.aiSummary,
       actionItems: email.aiActionItems,
       category: categories?.[0] || null,
@@ -289,4 +320,5 @@ export default {
   getEmailThread,
   searchEmailsByQuery,
   syncEmailsFromGmail,
+  dismissEmail,
 };
