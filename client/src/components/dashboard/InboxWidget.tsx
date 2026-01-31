@@ -1,12 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { emailsApi } from '../../services/api';
 import { usePolling } from '../../hooks/usePolling';
+import { eventBus, EVENTS } from '../../utils/events';
 import { toast } from '../common/Toast';
 import { ViewAllEmailsModal } from './ViewAllEmailsModal';
 import type { Email } from '../../types';
 
-// Polling interval: 3 minutes (180000ms)
-const POLL_INTERVAL = 3 * 60 * 1000;
+// Polling interval: 1 minute (60000ms)
+const POLL_INTERVAL = 1 * 60 * 1000;
 
 export function InboxWidget() {
   const [emails, setEmails] = useState<Email[]>([]);
@@ -22,7 +23,11 @@ export function InboxWidget() {
         setIsLoading(true);
         // Trigger a quick sync before fetching prioritized emails
         try {
-          await emailsApi.sync(10);
+          const syncResult = await emailsApi.sync(10);
+          // If new emails were synced, they might have created tasks
+          if (syncResult.synced > 0) {
+            eventBus.emit(EVENTS.REFRESH_TASKS);
+          }
         } catch (syncErr) {
           console.warn('Background sync failed:', syncErr);
         }
@@ -47,6 +52,13 @@ export function InboxWidget() {
       immediate: true,
     }
   );
+
+  // Listen for external refresh requests
+  useEffect(() => {
+    return eventBus.on(EVENTS.REFRESH_EMAILS, () => {
+      refresh();
+    });
+  }, [refresh]);
 
   const handleDismiss = async (id: string) => {
     try {

@@ -5,8 +5,8 @@ import { toast } from '../common/Toast';
 import { ViewAllEventsModal } from './ViewAllEventsModal';
 import type { CalendarEvent } from '../../types';
 
-// Polling interval: 5 minutes (300000ms)
-const POLL_INTERVAL = 5 * 60 * 1000;
+// Polling interval: 1 minute (60000ms)
+const POLL_INTERVAL = 1 * 60 * 1000;
 
 export function ScheduleWidget() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);

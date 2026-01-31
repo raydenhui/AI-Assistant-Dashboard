@@ -25,8 +25,13 @@ export class EmailAnalysisService {
       receivedAt: e.receivedAt,
     }));
 
-    const currentTime = new Date().toISOString();
-    const prompt = `Current System Time: ${currentTime}\n\n${EMAIL_PRIORITY_PROMPT}\n\nEmails to analyze:\n${JSON.stringify(emailData, null, 2)}`;
+    const currentTime = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
+    const prompt = `IMPORTANT: The current system time is ${currentTime} UTC. Use this to judge the urgency of emails and to set accurate due dates for action items.
+
+${EMAIL_PRIORITY_PROMPT}
+
+Emails to analyze:
+${JSON.stringify(emailData, null, 2)}`;
 
     try {
       console.log(`[EmailAnalysisService] Analyzing ${emails.length} emails for user ${userId}`);

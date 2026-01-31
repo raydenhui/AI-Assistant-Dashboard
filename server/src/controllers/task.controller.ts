@@ -16,8 +16,13 @@ import type { Priority, TaskStatus } from '@prisma/client';
 const createTaskSchema = z.object({
   title: z.string().min(1, 'Title is required').max(500),
   description: z.string().max(5000).optional(),
-  dueDate: z.string().datetime().optional(),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
+  dueDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: 'Invalid date format',
+  }),
+  priority: z.preprocess(
+    (val) => (typeof val === 'string' ? val.toUpperCase() : val),
+    z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT'])
+  ).optional(),
   source: z.string().max(100).optional(),
   sourceId: z.string().max(255).optional(),
 });
@@ -25,16 +30,34 @@ const createTaskSchema = z.object({
 const updateTaskSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   description: z.string().max(5000).nullable().optional(),
-  dueDate: z.string().datetime().nullable().optional(),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
-  status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  dueDate: z.string().nullable().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: 'Invalid date format',
+  }),
+  priority: z.preprocess(
+    (val) => (typeof val === 'string' ? val.toUpperCase() : val),
+    z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT'])
+  ).optional(),
+  status: z.preprocess(
+    (val) => (typeof val === 'string' ? val.toUpperCase() : val),
+    z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'])
+  ).optional(),
 });
 
 const listTasksQuerySchema = z.object({
-  status: z.enum(['all', 'pending', 'in_progress', 'completed', 'cancelled']).optional(),
-  priority: z.enum(['all', 'low', 'medium', 'high', 'urgent']).optional(),
-  dueBefore: z.string().datetime().optional(),
-  dueAfter: z.string().datetime().optional(),
+  status: z.preprocess(
+    (val) => (typeof val === 'string' ? val.toLowerCase() : val),
+    z.enum(['all', 'pending', 'in_progress', 'completed', 'cancelled'])
+  ).optional(),
+  priority: z.preprocess(
+    (val) => (typeof val === 'string' ? val.toLowerCase() : val),
+    z.enum(['all', 'low', 'medium', 'high', 'urgent'])
+  ).optional(),
+  dueBefore: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: 'Invalid date format',
+  }),
+  dueAfter: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), {
+    message: 'Invalid date format',
+  }),
   limit: z.coerce.number().min(1).max(100).optional(),
   offset: z.coerce.number().min(0).optional(),
 });

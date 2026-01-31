@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTasksStore } from '../../store';
 import { usePolling } from '../../hooks/usePolling';
+import { eventBus, EVENTS } from '../../utils/events';
 import { toast } from '../common/Toast';
 import { AddTaskModal } from './AddTaskModal';
+import { EditTaskModal } from './EditTaskModal';
 
-// Polling interval: 2 minutes (120000ms)
-const POLL_INTERVAL = 2 * 60 * 1000;
+// Polling interval: 1 minute (60000ms)
+const POLL_INTERVAL = 1 * 60 * 1000;
 
 export function TasksWidget() {
   const { tasks, isLoading, error, fetchTasks, toggleTaskStatus, deleteTask } = useTasksStore();
   const [showAddTask, setShowAddTask] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
 
   // Use polling hook for auto-refresh
   const { lastUpdated, refresh } = usePolling(
@@ -23,6 +26,13 @@ export function TasksWidget() {
     }
   );
 
+  // Listen for external refresh requests
+  useEffect(() => {
+    return eventBus.on(EVENTS.REFRESH_TASKS, () => {
+      refresh();
+    });
+  }, [refresh]);
+
   const formatDueDate = (dateString: string | null) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -30,25 +40,15 @@ export function TasksWidget() {
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    if (date.toDateString() === now.toDateString()) return 'Due: Today';
-    if (date.toDateString() === tomorrow.toDateString()) return 'Due: Tomorrow';
+    const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    
+    if (date.toDateString() === now.toDateString()) return `Due: Today at ${timeStr}`;
+    if (date.toDateString() === tomorrow.toDateString()) return `Due: Tomorrow at ${timeStr}`;
     
     const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return `Overdue: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-    if (diffDays <= 7) return `Due: ${date.toLocaleDateString('en-US', { weekday: 'short' })}`;
-    return `Due: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-  };
-
-  const handleToggleStatus = async (id: string) => {
-    try {
-      await toggleTaskStatus(id);
-      const task = tasks.find(t => t.id === id);
-      if (task) {
-        toast.success(task.status === 'completed' ? 'Task reopened' : 'Task completed!');
-      }
-    } catch {
-      toast.error('Failed to update task');
-    }
+    if (diffDays < 0) return `Overdue: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${timeStr}`;
+    if (diffDays <= 7) return `Due: ${date.toLocaleDateString('en-US', { weekday: 'short' })} at ${timeStr}`;
+    return `Due: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${timeStr}`;
   };
 
   const handleDeleteTask = async (id: string) => {
@@ -70,22 +70,17 @@ export function TasksWidget() {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
 
-  // Filter pending tasks first, then completed
+  // Sort by due date
   const sortedTasks = [...tasks].sort((a, b) => {
-    if (a.status === b.status) {
-      // Sort by due date if same status
-      if (a.dueDate && b.dueDate) {
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      }
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      return 0;
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
     }
-    return a.status === 'completed' ? 1 : -1;
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    return 0;
   });
 
-  const pendingCount = tasks.filter(t => t.status !== 'completed').length;
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
+  const taskCount = tasks.length;
 
   return (
     <>
@@ -93,9 +88,9 @@ export function TasksWidget() {
         <div className="widget-header">
           <div className="flex items-center gap-2">
             <span className="dark:text-white">Action Items</span>
-            {pendingCount > 0 && (
+            {taskCount > 0 && (
               <span className="text-xs bg-primary text-white px-2 py-0.5 rounded-full">
-                {pendingCount}
+                {taskCount}
               </span>
             )}
             {lastUpdated && (
@@ -148,24 +143,18 @@ export function TasksWidget() {
                 <li key={task.id} className="py-3 first:pt-0 last:pb-0 group">
                   {/* Main row */}
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={task.status === 'completed'}
-                        onChange={() => handleToggleStatus(task.id)}
-                        className="mt-1 w-4 h-4 accent-primary cursor-pointer"
-                        aria-label={`Mark "${task.title}" as ${task.status === 'completed' ? 'incomplete' : 'complete'}`}
-                      />
-                      <label
-                        className={`font-medium cursor-pointer ${
-                          task.status === 'completed'
-                            ? 'text-gray-400 line-through dark:text-slate-500'
-                            : 'text-gray-800 dark:text-slate-200'
-                        }`}
-                        onClick={() => handleToggleStatus(task.id)}
-                      >
-                        {task.title}
-                      </label>
+                    <div
+                      className="flex items-start gap-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => setEditingTask(task)}
+                    >
+                      <div className="mt-1.5">
+                        <i className="fas fa-circle text-primary/30 text-[8px]"></i>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium block truncate text-gray-800 dark:text-slate-200">
+                          {task.title}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {task.priority === 'high' && task.status !== 'completed' && (
@@ -182,7 +171,10 @@ export function TasksWidget() {
                   </div>
                   
                   {/* Meta row */}
-                  <div className="flex gap-3 text-sm text-gray-500 mt-1 ml-7 dark:text-slate-400">
+                  <div
+                    className="flex gap-3 text-sm text-gray-500 mt-1 ml-7 dark:text-slate-400 cursor-pointer"
+                    onClick={() => setEditingTask(task)}
+                  >
                     {task.dueDate && (
                       <span className={
                         task.status !== 'completed' && new Date(task.dueDate) < new Date() 
@@ -204,16 +196,11 @@ export function TasksWidget() {
             </ul>
 
             {/* Stats and View More */}
-            {(tasks.length > 5 || completedCount > 0) && (
-              <div className="flex items-center justify-between text-sm text-gray-500 mt-3 pt-3 border-t border-border dark:text-slate-400">
-                <span>
-                  {completedCount > 0 && `${completedCount} completed`}
+            {tasks.length > 5 && (
+              <div className="flex items-center justify-end text-sm text-gray-500 mt-3 pt-3 border-t border-border dark:text-slate-400">
+                <span className="text-primary">
+                  +{tasks.length - 5} more tasks
                 </span>
-                {tasks.length > 5 && (
-                  <span className="text-primary">
-                    +{tasks.length - 5} more tasks
-                  </span>
-                )}
               </div>
             )}
           </>
@@ -222,6 +209,15 @@ export function TasksWidget() {
 
       {/* Add Task Modal */}
       <AddTaskModal isOpen={showAddTask} onClose={() => setShowAddTask(false)} />
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <EditTaskModal
+          isOpen={!!editingTask}
+          onClose={() => setEditingTask(null)}
+          task={editingTask}
+        />
+      )}
     </>
   );
 }
