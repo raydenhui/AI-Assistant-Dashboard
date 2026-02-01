@@ -84,35 +84,37 @@ export function TasksWidget() {
 
   return (
     <>
-      <div className="widget">
-        <div className="widget-header">
-          <div className="flex items-center gap-2">
-            <span className="dark:text-white">Action Items</span>
-            {taskCount > 0 && (
-              <span className="text-xs bg-primary text-white px-2 py-0.5 rounded-full">
-                {taskCount}
-              </span>
-            )}
-            {lastUpdated && (
-              <span className="text-xs text-gray-400 font-normal dark:text-slate-500">
-                {formatLastUpdated(lastUpdated)}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => refresh()}
-              className="text-gray-400 hover:text-primary transition-colors dark:text-slate-500 dark:hover:text-primary"
-              title="Refresh"
-            >
-              <i className="fas fa-sync-alt text-sm"></i>
-            </button>
-            <button 
-              onClick={() => setShowAddTask(true)}
-              className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
-            >
-              Add New <i className="fas fa-plus text-xs"></i>
-            </button>
+      <div className="widget h-full flex flex-col">
+        <div className="widget-header !mb-2 !pb-1.5 flex-col !items-start">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <span className="dark:text-white whitespace-nowrap text-base">Action Items</span>
+              {taskCount > 0 && (
+                <span className="text-[10px] bg-primary text-white px-1.5 py-0 rounded-full">
+                  {taskCount}
+                </span>
+              )}
+              {lastUpdated && (
+                <span className="text-[10px] text-gray-400 font-normal dark:text-slate-500 ml-1">
+                  {formatLastUpdated(lastUpdated)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => refresh()}
+                className="text-gray-400 hover:text-primary transition-colors dark:text-slate-500 dark:hover:text-primary"
+                title="Refresh"
+              >
+                <i className="fas fa-sync-alt text-xs"></i>
+              </button>
+              <button
+                onClick={() => setShowAddTask(true)}
+                className="text-primary hover:underline text-xs font-medium whitespace-nowrap"
+              >
+                Add New
+              </button>
+            </div>
           </div>
         </div>
 
@@ -138,7 +140,7 @@ export function TasksWidget() {
           </div>
         ) : (
           <>
-            <ul className="widget-content divide-y divide-border">
+            <ul className="widget-content divide-y divide-border overflow-auto flex-1">
               {sortedTasks.slice(0, 5).map((task) => (
                 <li key={task.id} className="py-3 first:pt-0 last:pb-0 group">
                   {/* Main row */}
