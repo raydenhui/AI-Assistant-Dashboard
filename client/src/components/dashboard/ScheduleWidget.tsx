@@ -42,9 +42,14 @@ export function ScheduleWidget() {
     }
   );
 
-  const handleDismiss = (id: string) => {
-    setEvents(events.filter(e => e.id !== id));
-    toast.info('Event hidden from today\'s view');
+  const handleDismiss = async (id: string) => {
+    try {
+      await calendarApi.dismiss(id);
+      setEvents(events.filter(e => e.id !== id));
+      toast.info('Event hidden from today\'s view');
+    } catch (err) {
+      toast.error('Failed to dismiss event');
+    }
   };
 
   const formatTime = (dateString: string) => {

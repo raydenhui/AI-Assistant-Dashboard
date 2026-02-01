@@ -682,6 +682,7 @@ export async function getCachedEvents(
       gte: startAfter,
     },
     status: 'CONFIRMED', // Only get confirmed events
+    isDismissed: false, // Filter out dismissed events
   };
 
   if (startBefore) {
@@ -896,21 +897,33 @@ export async function getTodaysEvents(userId: string): Promise<CachedEvent[]> {
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
 
-  // Sync today's events first
-  await listEvents(userId, { timeMin: startOfDay, timeMax: endOfDay });
+  // Sync events for today to ensure cache is up to date
+  await syncEvents(userId, 1); // Sync 1 day ahead
 
   return prisma.cachedEvent.findMany({
     where: {
       userId,
       startTime: { gte: startOfDay, lte: endOfDay },
       status: 'CONFIRMED',
+      isDismissed: false,
     },
     orderBy: { startTime: 'asc' },
   });
 }
 
+/**
+ * Dismiss a calendar event
+ */
+export async function dismissEvent(userId: string, calendarId: string): Promise<void> {
+  await prisma.cachedEvent.update({
+    where: { calendarId },
+    data: { isDismissed: true },
+  });
+}
+
 export default {
   listEvents,
+  dismissEvent,
   getEvent,
   createEvent,
   updateEvent,

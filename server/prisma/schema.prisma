@@ -187,6 +187,7 @@ model CachedEvent {
   
   // Meeting details
   meetingLink String?  // Google Meet or other video call link
+  isDismissed Boolean @default(false)
   
   // AI Analysis results
   aiSummary   String?

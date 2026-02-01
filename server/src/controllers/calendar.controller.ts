@@ -11,6 +11,7 @@ import {
   checkConflicts,
   findFocusTime,
   getTodaysEvents,
+  dismissEvent,
 } from '../services/google/calendar.service.js';
 import { BadRequestError, NotFoundError } from '../middleware/error.middleware.js';
 
@@ -389,6 +390,33 @@ export async function getFocusTimeSlots(
 }
 
 /**
+ * PATCH /api/calendar/events/:id/dismiss
+ * Dismiss a calendar event
+ */
+export async function dismissCalendarEvent(
+  req: Request,
+  res: Response
+): Promise<void> {
+  if (!req.userId) {
+    throw new BadRequestError('Not authenticated');
+  }
+
+  const { id } = req.params;
+
+  if (!id || typeof id !== 'string') {
+    throw new BadRequestError('Event ID is required');
+  }
+
+  await dismissEvent(req.userId, id);
+
+  res.json({
+    success: true,
+    data: { id },
+    message: 'Event dismissed',
+  });
+}
+
+/**
  * Format cached event for API response
  */
 function formatEventResponse(
@@ -438,4 +466,5 @@ export default {
   syncCalendarEvents,
   checkSchedulingConflicts,
   getFocusTimeSlots,
+  dismissCalendarEvent,
 };

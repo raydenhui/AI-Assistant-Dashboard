@@ -9,6 +9,7 @@ import {
   syncCalendarEvents,
   checkSchedulingConflicts,
   getFocusTimeSlots,
+  dismissCalendarEvent,
 } from '../controllers/calendar.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { asyncHandler } from '../middleware/error.middleware.js';
@@ -87,5 +88,12 @@ router.patch('/events/:id', requireAuth, asyncHandler(updateExistingEvent));
  * @access  Private
  */
 router.delete('/events/:id', requireAuth, asyncHandler(deleteExistingEvent));
+
+/**
+ * @route   PATCH /api/calendar/events/:id/dismiss
+ * @desc    Dismiss a calendar event
+ * @access  Private
+ */
+router.patch('/events/:id/dismiss', requireAuth, asyncHandler(dismissCalendarEvent));
 
 export default router;
