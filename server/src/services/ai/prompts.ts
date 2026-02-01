@@ -248,10 +248,11 @@ export function getSystemPrompt(options?: {
   if (options?.includeCurrentDate) {
     const now = new Date();
     const timezone = options.userTimezone || 'UTC';
-    prompt += `\n\n## Current Context\n- Current Date/Time: ${now.toISOString()}`;
-    if (options.userTimezone) {
-      prompt += `\n- User Timezone: ${timezone}`;
-    }
+    const localTime = now.toLocaleString('en-US', { timeZone: timezone });
+    
+    prompt += `\n\n## Current Context\n- Current Date/Time (UTC): ${now.toISOString()}`;
+    prompt += `\n- User Local Time: ${localTime}`;
+    prompt += `\n- User Timezone: ${timezone}`;
   }
   
   if (options?.customInstructions) {

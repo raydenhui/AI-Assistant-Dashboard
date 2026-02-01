@@ -15,6 +15,14 @@ export class EmailAnalysisService {
   static async analyzeEmails(userId: string, emails: CachedEmail[]): Promise<void> {
     if (emails.length === 0) return;
 
+    // Get user for timezone
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+
+    const userTimezone = user?.timezone || 'UTC';
+
     const emailData = emails.map(e => ({
       id: e.gmailId,
       subject: e.subject,
@@ -25,8 +33,16 @@ export class EmailAnalysisService {
       receivedAt: e.receivedAt,
     }));
 
-    const currentTime = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
-    const prompt = `IMPORTANT: The current system time is ${currentTime} UTC. Use this to judge the urgency of emails and to set accurate due dates for action items.
+    const currentTimeUTC = new Date().toISOString();
+    const currentTimeLocal = new Date().toLocaleString('en-US', { timeZone: userTimezone });
+    
+    const prompt = `IMPORTANT:
+- Current System Time (UTC): ${currentTimeUTC}
+- User Local Time: ${currentTimeLocal}
+- User Timezone: ${userTimezone}
+
+Use the User Local Time and Timezone to judge the urgency of emails (e.g., "today", "tomorrow", "8:00pm") and to set accurate due dates for action items.
+All due dates in your response should be in ISO 8601 format, correctly converted to UTC based on the user's timezone.
 
 ${EMAIL_PRIORITY_PROMPT}
 
@@ -161,6 +177,14 @@ ${JSON.stringify(emailData, null, 2)}`;
 
     console.log(`Re-evaluating ${emailsToReevaluate.length} emails for user ${userId}`);
     
+    // Get user for timezone
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+
+    const userTimezone = user?.timezone || 'UTC';
+
     const emailData = emailsToReevaluate.map(e => ({
       id: e.gmailId,
       subject: e.subject,
@@ -170,8 +194,22 @@ ${JSON.stringify(emailData, null, 2)}`;
       analyzedAt: e.analyzedAt,
     }));
 
-    const currentTime = new Date().toISOString();
-    const prompt = `Current System Time: ${currentTime}\n\nCheck if these emails still need user response or if their priority has changed based on the current time. Guidelines:\n${EMAIL_PRIORITY_PROMPT}\n\nEmails:\n${JSON.stringify(emailData, null, 2)}`;
+    const currentTimeUTC = new Date().toISOString();
+    const currentTimeLocal = new Date().toLocaleString('en-US', { timeZone: userTimezone });
+
+    const prompt = `IMPORTANT:
+- Current System Time (UTC): ${currentTimeUTC}
+- User Local Time: ${currentTimeLocal}
+- User Timezone: ${userTimezone}
+
+Check if these emails still need user response or if their priority has changed based on the current time.
+All due dates in your response should be in ISO 8601 format, correctly converted to UTC based on the user's timezone.
+
+Guidelines:
+${EMAIL_PRIORITY_PROMPT}
+
+Emails:
+${JSON.stringify(emailData, null, 2)}`;
 
     try {
       const response = await llmService.chat(userId, {
