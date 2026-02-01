@@ -85,9 +85,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     }));
 
     try {
-      console.log('[ChatStore] Sending message:', message, 'Conversation ID:', currentConversation?.id);
       const response = await chatApi.sendMessage(message, currentConversation?.id);
-      console.log('[ChatStore] Received response:', response);
       
       set((state) => ({
         currentConversation: response.conversation,

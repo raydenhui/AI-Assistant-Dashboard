@@ -18,13 +18,6 @@ export function ChatPanel() {
   
   const [inputValue, setInputValue] = useState('');
   const [showHistory, setShowHistory] = useState(false);
-  
-  // Debug logging
-  useEffect(() => {
-    if (showHistory) {
-      console.log('[ChatPanel] History opened. Conversations:', conversations);
-    }
-  }, [showHistory, conversations]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +55,6 @@ export function ChatPanel() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              console.log('[ChatPanel] Toggle history button clicked. Current state:', showHistory);
               setShowHistory(!showHistory);
             }}
             className={`p-2 rounded-lg transition-colors ${

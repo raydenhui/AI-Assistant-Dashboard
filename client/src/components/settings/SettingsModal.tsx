@@ -119,12 +119,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     
     try {
       setIsSubmitting(true);
-      console.log('[SettingsModal] Submitting settings:', {
-        provider: formData.provider,
-        model: formData.model,
-        hasKey: !!formData.openRouterKey,
-        theme: formData.theme
-      });
       const updatedUser = await authApi.updateSettings({
         provider: formData.provider as 'openrouter' | 'ollama',
         model: formData.model,
@@ -132,7 +126,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         theme: formData.theme,
         timezone: formData.timezone,
       });
-      console.log('[SettingsModal] Settings updated successfully:', updatedUser);
       updateUser(updatedUser);
       toast.success('Settings saved successfully');
       onClose();
