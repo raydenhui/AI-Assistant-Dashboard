@@ -21,7 +21,7 @@ export function ViewAllEmailsModal({ isOpen, onClose }: ViewAllEmailsModalProps)
       setIsLoading(true);
       const data = query 
         ? await emailsApi.search(query)
-        : await emailsApi.list({ maxResults: 50 });
+        : await emailsApi.list({ maxResults: 30 });
       setEmails(data);
     } catch (error) {
       toast.error('Failed to fetch emails');
@@ -45,7 +45,7 @@ export function ViewAllEmailsModal({ isOpen, onClose }: ViewAllEmailsModalProps)
   const handleSync = async () => {
     try {
       setIsSyncing(true);
-      const result = await emailsApi.sync(50);
+      const result = await emailsApi.sync(30);
       toast.success(`Synced ${result.synced} emails`);
       fetchEmails();
     } catch (error) {
@@ -226,8 +226,8 @@ export function ViewAllEmailsModal({ isOpen, onClose }: ViewAllEmailsModalProps)
                     Action Items
                   </div>
                   <ul className="text-sm text-yellow-800 list-disc list-inside dark:text-yellow-300">
-                    {selectedEmail.aiAnalysis.actionItems.map((item, idx) => (
-                      <li key={idx}>{item}</li>
+                    {selectedEmail.aiAnalysis.actionItems.map((item: any, idx) => (
+                      <li key={idx}>{typeof item === 'string' ? item : item.title}</li>
                     ))}
                   </ul>
                 </div>

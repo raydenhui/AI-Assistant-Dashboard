@@ -83,8 +83,8 @@ ${JSON.stringify(emailData, null, 2)}`;
           aiActionItems: result.actionItems || [],
         });
 
-        // Create tasks for action items
-        if (result.actionItems && Array.isArray(result.actionItems)) {
+        // Create tasks for action items only for prioritized emails
+        if (priority !== Priority.LOW && result.actionItems && Array.isArray(result.actionItems)) {
           for (const item of result.actionItems) {
             // Check if task already exists for this email and title
             const existingTask = await prisma.task.findFirst({
@@ -211,8 +211,8 @@ ${JSON.stringify(emailData, null, 2)}`;
           aiActionItems: result.actionItems || [],
         });
 
-        // Create tasks for action items
-        if (result.actionItems && Array.isArray(result.actionItems)) {
+        // Create tasks for action items only for prioritized emails
+        if (priority !== Priority.LOW && result.actionItems && Array.isArray(result.actionItems)) {
           for (const item of result.actionItems) {
             const existingTask = await prisma.task.findFirst({
               where: {
