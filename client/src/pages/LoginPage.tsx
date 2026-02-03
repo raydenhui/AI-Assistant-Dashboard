@@ -1,9 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { authApi } from '../services/api';
 
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // Load theme from local storage or system preference
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+    }
+  }, []);
+
+  useEffect(() => {
+    // Apply theme to document
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -19,17 +44,30 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-background relative transition-colors duration-200">
+      {/* Theme Toggle */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-border text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+        aria-label="Toggle theme"
+      >
+        {theme === 'light' ? (
+          <i className="fas fa-moon"></i>
+        ) : (
+          <i className="fas fa-sun"></i>
+        )}
+      </button>
+
       <div className="widget max-w-md w-full mx-4 p-8">
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
             <i className="fas fa-robot text-white text-2xl"></i>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
             AI Productivity Dashboard
           </h1>
-          <p className="text-gray-500 mt-2">
+          <p className="text-gray-500 dark:text-slate-400 mt-2">
             Your intelligent assistant for managing emails, calendar, and tasks
           </p>
         </div>
@@ -46,12 +84,12 @@ export function LoginPage() {
         <button
           onClick={handleGoogleLogin}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 bg-white border border-border rounded-lg px-6 py-3 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-border rounded-lg px-6 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <>
               <div className="spinner"></div>
-              <span className="text-gray-700">Connecting...</span>
+              <span className="text-gray-700 dark:text-slate-200">Connecting...</span>
             </>
           ) : (
             <>
@@ -73,7 +111,7 @@ export function LoginPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              <span className="text-gray-700 font-medium">
+              <span className="text-gray-700 dark:text-slate-200 font-medium">
                 Continue with Google
               </span>
             </>
@@ -82,10 +120,10 @@ export function LoginPage() {
 
         {/* Features */}
         <div className="mt-8 pt-6 border-t border-border">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-4">
             What you'll get:
           </h3>
-          <ul className="space-y-3 text-sm text-gray-600">
+          <ul className="space-y-3 text-sm text-gray-600 dark:text-slate-400">
             <li className="flex items-start gap-3">
               <i className="fas fa-envelope text-primary mt-0.5"></i>
               <span>AI-powered email prioritization and summaries</span>
@@ -106,7 +144,7 @@ export function LoginPage() {
         </div>
 
         {/* Privacy note */}
-        <p className="mt-6 text-xs text-center text-gray-400">
+        <p className="mt-6 text-xs text-center text-gray-400 dark:text-slate-500">
           Your data is processed securely. You can use local AI models for complete privacy.
         </p>
       </div>
