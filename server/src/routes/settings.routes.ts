@@ -93,13 +93,13 @@ router.get('/llm/models', requireAuth, async (req: Request, res: Response) => {
       ];
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: { provider, models },
     });
   } catch (error) {
     console.error('Get models error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to get models',
     });

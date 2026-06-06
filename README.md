@@ -90,7 +90,7 @@ npm run db:push
 npm run dev
 ```
 
-The backend will be available at `http://localhost:3001`
+The backend will be available at `http://localhost:3002`
 
 ### 5. Set Up the Frontend
 
@@ -195,7 +195,7 @@ AI-Assistant-Dashboard/
 2. Create a new project or select existing
 3. Enable Gmail API and Google Calendar API
 4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:3001/api/auth/google/callback`
+5. Add authorized redirect URI: `http://localhost:3002/api/auth/google/callback`
 6. Copy Client ID and Client Secret to `.env`
 
 ### LLM Provider Setup

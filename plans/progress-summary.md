@@ -24,6 +24,15 @@ All core infrastructure is set up and working:
 - `server/prisma/schema.prisma` - Database schema
 - `docker-compose.yml` - PostgreSQL container
 
+**Commands:**
+```bash
+cd server
+npm install
+npm run db:generate
+npm run db:push
+npm run dev  # Starts server at http://localhost:3002
+```
+
 ---
 
 ### ✅ Phase 2: Authentication & Google OAuth
@@ -155,13 +164,13 @@ Complete implementation of Phase 7 features:
 Create `server/.env` with:
 ```env
 NODE_ENV=development
-PORT=3001
+PORT=3002
 DATABASE_URL=postgresql://ai_dashboard:ai_dashboard_secret@localhost:5432/ai_dashboard
 JWT_SECRET=dev-secret-key-for-local-development-only-min-32-chars
 JWT_EXPIRES_IN=7d
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:3001/api/auth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3002/api/auth/google/callback
 OPENROUTER_API_KEY=your-openrouter-api-key
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_DEFAULT_MODEL=google/gemini-3-flash-preview
@@ -304,6 +313,14 @@ AI-Assistant-Dashboard/
 ---
 
 ## API Endpoints Summary (Updated)
+
+1. Start the database: `docker compose up -d postgres`
+2. Navigate to server: `cd server`
+3. Start dev server: `npm run dev`
+4. Server runs at: http://localhost:3002
+5. Continue with Phase 4: Create Gmail and Calendar services
+
+---
 
 ### Settings API (NEW)
 | Method | Endpoint | Description |

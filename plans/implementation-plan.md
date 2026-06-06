@@ -801,7 +801,7 @@ graph TD
 
 ```env
 # Server
-PORT=3001
+PORT=3002
 NODE_ENV=development
 
 # Database
@@ -810,7 +810,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/ai_dashboard
 # Google OAuth
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:3001/api/auth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3002/api/auth/google/callback
 
 # JWT
 JWT_SECRET=your_jwt_secret
