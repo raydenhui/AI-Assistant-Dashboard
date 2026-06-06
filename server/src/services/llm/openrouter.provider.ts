@@ -40,7 +40,7 @@ export class OpenRouterProvider extends LLMProvider {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:3001', // Required by OpenRouter
+      'HTTP-Referer': 'http://localhost:3002', // Required by OpenRouter
       'X-Title': 'AI Dashboard', // App identification
     };
 

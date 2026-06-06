@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, ModalFooter, ModalButton } from '../common/Modal';
 import { useTasksStore } from '../../store';
 import { toast } from '../common/Toast';
-import type { Task, TaskPriority, TaskStatus } from '../../types';
+import type { Task } from '../../types';
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -76,8 +76,6 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
       setIsSubmitting(false);
     }
   };
-
-  const today = new Date().toISOString().split('T')[0];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Task" size="md">

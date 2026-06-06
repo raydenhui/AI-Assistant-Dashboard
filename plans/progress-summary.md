@@ -30,7 +30,7 @@ cd server
 npm install
 npm run db:generate
 npm run db:push
-npm run dev  # Starts server at http://localhost:3001
+npm run dev  # Starts server at http://localhost:3002
 ```
 
 ---
@@ -162,13 +162,13 @@ Complete LLM integration supporting both cloud (OpenRouter) and local (Ollama):
 Create `server/.env` with:
 ```env
 NODE_ENV=development
-PORT=3001
+PORT=3002
 DATABASE_URL=postgresql://ai_dashboard:ai_dashboard_secret@localhost:5432/ai_dashboard
 JWT_SECRET=dev-secret-key-for-local-development-only-min-32-chars
 JWT_EXPIRES_IN=7d
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:3001/api/auth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3002/api/auth/google/callback
 OPENROUTER_API_KEY=your-openrouter-api-key
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_DEFAULT_MODEL=anthropic/claude-3.5-sonnet
@@ -184,7 +184,7 @@ FRONTEND_URL=http://localhost:5173
 1. Start the database: `docker compose up -d postgres`
 2. Navigate to server: `cd server`
 3. Start dev server: `npm run dev`
-4. Server runs at: http://localhost:3001
+4. Server runs at: http://localhost:3002
 5. Continue with Phase 4: Create Gmail and Calendar services
 
 ---

@@ -676,6 +676,7 @@ export async function getCachedEvents(
     startTime?: { gte?: Date; lte?: Date };
     isAllDay?: boolean;
     status?: EventStatus;
+    isDismissed?: boolean;
   } = {
     userId,
     startTime: {

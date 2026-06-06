@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Modal, ModalFooter, ModalButton } from '../common/Modal';
 import { useTasksStore } from '../../store';
 import { toast } from '../common/Toast';
-import type { TaskPriority } from '../../types';
 
 interface AddTaskModalProps {
   isOpen: boolean;

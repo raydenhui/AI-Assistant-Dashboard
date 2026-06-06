@@ -1,14 +1,15 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import path from 'path';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from the root project folder
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 // Environment validation schema
 const envSchema = z.object({
   // Server
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().default('3001'),
+  PORT: z.string().default('3002'),
   
   // Database
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),

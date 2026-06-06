@@ -10,7 +10,7 @@ import { EditTaskModal } from './EditTaskModal';
 const POLL_INTERVAL = 1 * 60 * 1000;
 
 export function TasksWidget() {
-  const { tasks, isLoading, error, fetchTasks, toggleTaskStatus, deleteTask } = useTasksStore();
+  const { tasks, isLoading, error, fetchTasks, deleteTask } = useTasksStore();
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
 
