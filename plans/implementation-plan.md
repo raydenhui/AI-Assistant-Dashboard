@@ -409,7 +409,7 @@ const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    model: 'anthropic/claude-3.5-sonnet',
+    model: 'google/gemini-3-flash-preview',
     messages: [...],
     tools: [...],  // Function calling
     tool_choice: 'auto'
@@ -817,7 +817,7 @@ JWT_SECRET=your_jwt_secret
 
 # LLM Providers
 OPENROUTER_API_KEY=your_openrouter_key
-OPENROUTER_DEFAULT_MODEL=anthropic/claude-3.5-sonnet
+OPENROUTER_DEFAULT_MODEL=google/gemini-3-flash-preview
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_DEFAULT_MODEL=llama3.2
 
