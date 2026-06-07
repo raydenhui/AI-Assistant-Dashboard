@@ -88,10 +88,21 @@ async function request<T>(config: AxiosRequestConfig): Promise<T> {
     if (response.data.success && response.data.data !== undefined) {
       return response.data.data;
     }
-    throw new Error(response.data.error || 'Request failed');
+    throw new Error(
+      (response.data as any).error?.message ||
+      (response.data as any).error ||
+      'Request failed'
+    );
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.data?.message) {
-      throw new Error(error.response.data.message);
+    if (axios.isAxiosError(error)) {
+      // Server returns { success: false, error: { message: "..." } }
+      const serverMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.response?.data?.error;
+      if (serverMessage && typeof serverMessage === 'string') {
+        throw new Error(serverMessage);
+      }
     }
     throw error;
   }

@@ -9,6 +9,8 @@ export function ChatPanel() {
     isLoading,
     isStreaming,
     streamingContent,
+    error,
+    clearError,
     fetchConversations,
     selectConversation,
     sendMessage,
@@ -159,6 +161,31 @@ export function ChatPanel() {
           </>
         }
         
+        {/* Error message */}
+        {error && (
+          <div className="flex items-start gap-3 p-3 mx-1 rounded-xl bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800/40">
+            <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0 mt-0.5 dark:bg-red-900/40 dark:text-red-400">
+              <i className="fas fa-exclamation-triangle text-[10px]"></i>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-red-700 dark:text-red-400">AI Error</p>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-0.5 break-words">{error}</p>
+              {error.toLowerCase().includes('model') && (
+                <p className="text-[10px] text-red-500 dark:text-red-500 mt-1">
+                  Tip: Go to Settings and select a model that's installed in Ollama (e.g., gemma4:latest).
+                </p>
+              )}
+            </div>
+            <button
+              onClick={clearError}
+              className="text-red-400 hover:text-red-600 dark:hover:text-red-300 shrink-0"
+              title="Dismiss error"
+            >
+              <i className="fas fa-times text-xs"></i>
+            </button>
+          </div>
+        )}
+
         {/* Loading indicator */}
         {isLoading && !isStreaming && (
           <div className="chat-bubble chat-bubble-ai flex items-center gap-2 dark:text-slate-200">
