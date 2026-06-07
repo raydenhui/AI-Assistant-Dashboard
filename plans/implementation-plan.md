@@ -239,18 +239,18 @@ erDiagram
 
 ## Implementation Phases
 
-### Phase 1: Backend Foundation - Project Setup and Database
+### Phase 1: Backend Foundation - Project Setup and Database ✅ COMPLETE
 
 **Objective**: Set up the Node.js backend project structure with TypeScript, Express, and PostgreSQL using Prisma ORM.
 
 #### Tasks:
-- [ ] Initialize Node.js project with TypeScript configuration
-- [ ] Set up Express.js with middleware (CORS, body-parser, error handling)
-- [ ] Configure Prisma ORM with PostgreSQL
-- [ ] Create database schema (users, conversations, messages, tasks, cached_emails, cached_events)
-- [ ] Set up environment configuration (.env)
-- [ ] Create Docker Compose file for local PostgreSQL
-- [ ] Implement basic health check endpoint
+- [x] Initialize Node.js project with TypeScript configuration
+- [x] Set up Express.js with middleware (CORS, body-parser, error handling)
+- [x] Configure Prisma ORM with PostgreSQL
+- [x] Create database schema (users, conversations, messages, tasks, cached_emails, cached_events)
+- [x] Set up environment configuration (.env)
+- [x] Create Docker Compose file for local PostgreSQL
+- [x] Implement basic health check endpoint
 
 #### Key Files to Create:
 - [`server/package.json`](server/package.json) - Dependencies and scripts
@@ -283,17 +283,17 @@ erDiagram
 
 ---
 
-### Phase 2: Backend - Authentication and Google OAuth Integration
+### Phase 2: Backend - Authentication and Google OAuth Integration ✅ COMPLETE
 
 **Objective**: Implement user authentication using Google OAuth 2.0 and session management.
 
 #### Tasks:
-- [ ] Set up Google OAuth 2.0 flow (authorization URL generation, token exchange)
-- [ ] Implement token storage and refresh mechanism
-- [ ] Create authentication middleware for protected routes
-- [ ] Implement user creation/retrieval on successful OAuth
-- [ ] Set up JWT or session-based authentication for API requests
-- [ ] Create auth routes (login, callback, logout, status)
+- [x] Set up Google OAuth 2.0 flow (authorization URL generation, token exchange)
+- [x] Implement token storage and refresh mechanism
+- [x] Create authentication middleware for protected routes
+- [x] Implement user creation/retrieval on successful OAuth
+- [x] Set up JWT or session-based authentication for API requests
+- [x] Create auth routes (login, callback, logout, status)
 
 #### OAuth Flow:
 ```mermaid
@@ -338,18 +338,20 @@ sequenceDiagram
 
 ---
 
-### Phase 3: Backend - LLM Provider Abstraction (OpenRouter + Ollama)
+### Phase 3: Backend - LLM Provider Abstraction (OpenRouter + Ollama) ✅ COMPLETE
 
 **Objective**: Create a flexible LLM service that supports both OpenRouter (cloud) and Ollama (local) providers with function calling capabilities.
 
 #### Tasks:
-- [ ] Design LLM provider interface/abstraction
-- [ ] Implement OpenRouter provider with function calling support
-- [ ] Implement Ollama provider with function calling support
-- [ ] Create LLM service that routes to appropriate provider based on user settings
-- [ ] Implement streaming response support
-- [ ] Add provider health check and fallback logic
-- [ ] Create settings endpoint for users to configure their LLM preference
+- [x] Design LLM provider interface/abstraction
+- [x] Implement OpenRouter provider with function calling support
+- [x] Implement Ollama provider with function calling support (with bug fixes applied 2026-06-08)
+- [x] Create LLM service that routes to appropriate provider based on user settings
+- [x] Implement streaming response support
+- [x] Add provider health check and fallback logic
+- [x] Create settings endpoint for users to configure their LLM preference
+
+> **Bug Fixes Applied (2026-06-08):** `OllamaProvider` was fixed to (1) auto-fallback to first available model if configured model not installed, (2) correctly report `available: true` in health status when any model is installed, and (3) serialize tool call arguments as plain objects (not JSON strings) for Ollama API compatibility. See `plans/progress-summary.md` for full details.
 
 #### LLM Provider Architecture:
 ```mermaid
@@ -419,17 +421,17 @@ const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 
 ---
 
-### Phase 4: Backend - Google API Integration (Gmail + Calendar)
+### Phase 4: Backend - Google API Integration (Gmail + Calendar) ✅ COMPLETE
 
 **Objective**: Implement services to fetch, cache, and manage Gmail and Google Calendar data.
 
 #### Tasks:
-- [ ] Implement Gmail service (list emails, get email details, search)
-- [ ] Implement Calendar service (list events, get event details, create events)
-- [ ] Create email caching mechanism with incremental sync
-- [ ] Create calendar event caching mechanism
-- [ ] Implement webhook/push notification setup for real-time updates (optional)
-- [ ] Create API endpoints for email and calendar data
+- [x] Implement Gmail service (list emails, get email details, search)
+- [x] Implement Calendar service (list events, get event details, create events)
+- [x] Create email caching mechanism with incremental sync
+- [x] Create calendar event caching mechanism
+- [ ] Implement webhook/push notification setup for real-time updates (optional - skipped for MVP)
+- [x] Create API endpoints for email and calendar data
 
 #### Gmail Service Features:
 - List recent emails with pagination
@@ -455,18 +457,18 @@ const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
 
 ---
 
-### Phase 5: Backend - AI Features (Prioritization, Action Extraction, Briefing)
+### Phase 5: Backend - AI Features (Prioritization, Action Extraction, Briefing) ✅ COMPLETE
 
 **Objective**: Implement the AI agent with function calling capabilities for email prioritization, action item extraction, and daily briefing generation.
 
 #### Tasks:
-- [ ] Design AI agent architecture with tool definitions
-- [ ] Implement email prioritization tool
-- [ ] Implement action item extraction tool
-- [ ] Implement daily briefing generation
-- [ ] Implement task management tools (create, update, complete, delete)
-- [ ] Create chat endpoint with conversation history
-- [ ] Implement WebSocket support for streaming responses
+- [x] Design AI agent architecture with tool definitions
+- [x] Implement email prioritization tool
+- [x] Implement action item extraction tool
+- [x] Implement daily briefing generation
+- [x] Implement task management tools (create, update, complete, delete)
+- [x] Create chat endpoint with conversation history
+- [x] Implement SSE streaming responses (used instead of WebSocket)
 
 #### AI Tools Definition:
 ```typescript
@@ -612,19 +614,19 @@ sequenceDiagram
 
 ---
 
-### Phase 6: Frontend - React Application Setup and Core Components
+### Phase 6: Frontend - React Application Setup and Core Components ✅ COMPLETE
 
 **Objective**: Set up the React frontend with TypeScript, routing, state management, and core reusable components.
 
 #### Tasks:
-- [ ] Initialize React project with Vite and TypeScript
-- [ ] Set up project structure and configuration
-- [ ] Configure React Router for navigation
-- [ ] Set up state management (React Context or Zustand)
-- [ ] Create API client service with authentication
-- [ ] Implement core UI components (Button, Input, Card, Modal, etc.)
-- [ ] Set up CSS/styling approach (CSS Modules or Tailwind CSS)
-- [ ] Create authentication flow (login page, protected routes)
+- [x] Initialize React project with Vite and TypeScript
+- [x] Set up project structure and configuration
+- [x] Configure React Router for navigation
+- [x] Set up state management (Zustand - auth, tasks, chat stores)
+- [x] Create API client service with authentication (with bug fixes applied 2026-06-08)
+- [x] Implement core UI components (Modal, Toast, Skeleton loading, etc.)
+- [x] Set up Tailwind CSS with custom theme
+- [x] Create authentication flow (login page, protected routes, OAuth callback)
 
 #### Key Files to Create:
 - [`client/package.json`](client/package.json) - Dependencies
@@ -657,20 +659,20 @@ sequenceDiagram
 
 ---
 
-### Phase 7: Frontend - Dashboard Widgets and Chat Interface
+### Phase 7: Frontend - Dashboard Widgets and Chat Interface ✅ COMPLETE
 
 **Objective**: Implement the main dashboard UI with all widgets and the conversational AI chat interface.
 
 #### Tasks:
-- [ ] Create main layout component (Header, Dashboard, Chat Panel)
-- [ ] Implement Prioritized Inbox widget
-- [ ] Implement Action Items widget with task management
-- [ ] Implement Upcoming Schedule widget
-- [ ] Implement Chat interface with message history
-- [ ] Add real-time updates via WebSocket or polling
-- [ ] Implement streaming response display for AI chat
-- [ ] Add loading states and error handling
-- [ ] Implement settings panel for LLM provider selection
+- [x] Create main layout component (Header, Dashboard, Chat Panel)
+- [x] Implement Prioritized Inbox widget (with polling, view-all modal, email detail view)
+- [x] Implement Action Items / Tasks widget (with add task modal, bulk update)
+- [x] Implement Upcoming Schedule widget (with view-all modal, "happening now" indicator)
+- [x] Implement Chat interface with message history and conversation management
+- [x] Add real-time updates via polling (1-5 min intervals per widget)
+- [x] Implement SSE streaming response display for AI chat
+- [x] Add loading states (skeleton), error handling, and toast notifications
+- [x] Implement settings panel for LLM provider + model selection with live status indicators
 
 #### Component Hierarchy:
 ```mermaid
@@ -1190,13 +1192,16 @@ The implementation success will be measured by:
 
 ---
 
-## Next Steps
+## Current Status (2026-06-08)
 
-The implementation plan is complete. Ready to proceed with **Phase 1: Backend Foundation** which includes:
+**Phases 1–7 are complete.** The application is fully functional end-to-end with both OpenRouter (cloud) and Ollama (local) LLM providers.
 
-1. Initialize Node.js/TypeScript project
-2. Set up Express.js with middleware
-3. Configure Prisma with PostgreSQL
-4. Create database schema
-5. Set up Docker Compose for local PostgreSQL
-6. Implement health check endpoint
+### Next Step: Phase 8 — Testing & Deployment
+
+Priority items for Phase 8:
+1. **Unit tests** for `OllamaProvider` tool message formatting
+2. **Integration tests** for the `/api/chat/messages` endpoint (with mocked LLM)
+3. **Component tests** for `ChatPanel`, `SettingsModal`, and `InboxWidget`
+4. **Update `OLLAMA_DEFAULT_MODEL`** in `.env` to `gemma4:latest` (or whichever model is locally installed)
+5. **Production build** configuration and Docker Compose cleanup
+6. **API documentation** update (`docs/API.md`)

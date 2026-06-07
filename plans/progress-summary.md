@@ -1,8 +1,8 @@
 # AI Dashboard - Implementation Progress Summary
 
-## Project Status: Phases 1-7 Complete
+## Project Status: Phases 1-7 Complete + Bug Fixes Applied
 
-**Last Updated:** 2026-01-18  
+**Last Updated:** 2026-06-08  
 **Current Phase:** 8 (Testing & Deployment) - Next
 
 ---
@@ -98,7 +98,7 @@ Complete React frontend with Vite, TypeScript, and Tailwind CSS:
 
 ---
 
-### ✅ Phase 7: Dashboard & Chat UI Enhancements (NEW - COMPLETE)
+### ✅ Phase 7: Dashboard & Chat UI Enhancements (COMPLETE)
 Complete implementation of Phase 7 features:
 
 **New Components Created:**
@@ -128,12 +128,6 @@ Complete implementation of Phase 7 features:
 - `server/src/routes/settings.routes.ts` - Settings API routes
 - `server/src/services/llm/llm.service.ts` - Added getOpenRouterProvider/getOllamaProvider methods
 
-**CSS Additions:**
-- Animation keyframes (fade-in, slide-up, slide-down, pulse-soft)
-- Skeleton loading styles
-- Form input/select/textarea styles
-- New utility classes
-
 **Features Implemented:**
 | Feature | Description |
 |---------|-------------|
@@ -148,20 +142,85 @@ Complete implementation of Phase 7 features:
 
 ---
 
+### ✅ Ollama Integration Bug Fixes (2026-06-08)
+
+Following integration testing with a live Ollama instance, several bugs were identified and fixed:
+
+#### Bug 1: Ollama Connection Status Always Showed "Offline"
+**File:** `client/src/components/settings/SettingsModal.tsx`  
+**Root Cause:** The frontend was reading `data.openrouter` / `data.ollama` directly, but the backend wraps responses in `{ success: true, data: { openrouter: bool, ollama: bool } }`.  
+**Fix:** Now correctly reads `data.data.ollama` and `data.data.openrouter`.
+
+#### Bug 2: Chat Errors Were Silently Swallowed
+**File:** `client/src/components/chat/ChatPanel.tsx`  
+**Root Cause:** When AI calls failed, the error was stored in Zustand state but never surfaced in the UI.  
+**Fix:** Added a dismissible red error banner to `ChatPanel` that shows the actual error message. Includes a context-sensitive tip if the error is model-related.
+
+#### Bug 3: Frontend API Error Parser Reading Wrong Field
+**File:** `client/src/services/api.ts`  
+**Root Cause:** The `request()` helper was reading `error.response.data.message` but the server returns `{ success: false, error: { message: "..." } }`.  
+**Fix:** Now correctly reads `error.response.data.error.message` first, with fallbacks.
+
+#### Bug 4: Configured Ollama Model Not Installed → Hard Crash
+**File:** `server/src/services/llm/ollama.provider.ts`  
+**Root Cause:** `.env` defaults `OLLAMA_DEFAULT_MODEL=llama3.2`, but the user's Ollama installation has different models (e.g., `gemma4:latest`, `mistral:latest`). When the configured model was not found, the request failed with a vague Ollama 404 error.  
+**Fix:** Added `resolveModel()` method that:
+1. Queries `/api/tags` to list available models
+2. If configured model exists → use it
+3. If not → auto-falls back to the first available model and logs a warning
+4. If no models at all → throws a clear error message with install instructions
+
+#### Bug 5: `getHealthStatus()` Returned `available: false` For Valid Ollama Instances
+**File:** `server/src/services/llm/ollama.provider.ts`  
+**Root Cause:** Health status was checking if the *specific configured model* was installed, returning `false` even when Ollama was running fine with other models.  
+**Fix:** Health status now returns `available: true` as long as Ollama is running with at least one model. The `activeModel` field reflects which model will actually be used (configured or fallback).
+
+#### Bug 6: Ollama 400 Error During Tool-Use Conversations
+**File:** `server/src/services/llm/ollama.provider.ts`  
+**Root Cause:** Ollama requires tool call `arguments` to be a **plain JSON object**, but the system stores them as **JSON strings** (OpenAI-compatible format). When the AI used a tool (e.g., `get_tasks`) and the result was fed back into Ollama with string arguments, Ollama threw:  
+```
+{"error":"Value looks like object, but can't find closing '}' symbol"}
+```
+**Fix:** `formatMessages()` now parses tool call arguments from strings back into objects before sending to Ollama:
+```ts
+// Before: arguments: '{"status":"pending"}'  ← string (OpenAI format)
+// After:  arguments: { status: "pending" }    ← object (Ollama format)
+parsedArgs = JSON.parse(tc.function.arguments);
+```
+Also added `tool_call_id` pass-through for tool result messages.
+
+#### Verified Working
+- Direct Ollama API test with tool call format confirmed successful after fixes
+- `gemma4:latest`, `gemma4:12b`, `gemma3:12b`, `mistral:latest`, `gemma3n:latest` are all available
+
+---
+
 ## Remaining Phases
 
 ### ⏳ Phase 8: Testing & Deployment
-- Unit tests (Jest)
-- Integration tests (Supertest)
-- Component tests (React Testing Library)
-- Production build configuration
-- Documentation
+- [ ] Unit tests for LLM provider (especially Ollama tool formatting)
+- [ ] Integration tests for chat endpoint with Ollama
+- [ ] Integration tests for API endpoints  
+- [ ] Component tests for React components
+- [ ] Production build configuration
+- [ ] Documentation
+
+---
+
+## Known Limitations / Future Work
+
+| Item | Description |
+|------|-------------|
+| Ollama Model Config | `OLLAMA_DEFAULT_MODEL` in `.env` should be updated to a locally installed model name (e.g., `gemma4:latest`) to avoid relying on auto-fallback. |
+| Tool Support Per Model | Not all Ollama models support tool calling. Models that don't support `tools` will ignore tool calls and respond directly. Use `gemma4` or `mistral` for best tool support. |
+| Streaming Tool Calls | Tool calls during streaming responses are accumulated per-chunk. Complex multi-step tool workflows work better with non-streaming (`sendMessage`) vs streaming. |
+| Email Send Capability | Draft email replies are generated by the AI but cannot be sent. Read-only Gmail access only. |
 
 ---
 
 ## Environment Setup Required
 
-Create `server/.env` with:
+Create `.env` in the project root with:
 ```env
 NODE_ENV=development
 PORT=3002
@@ -175,7 +234,7 @@ OPENROUTER_API_KEY=your-openrouter-api-key
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_DEFAULT_MODEL=google/gemini-3-flash-preview
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_DEFAULT_MODEL=llama3.2
+OLLAMA_DEFAULT_MODEL=gemma4:latest   # ← Set to a locally installed model
 FRONTEND_URL=http://localhost:5173
 ```
 
@@ -190,7 +249,7 @@ cd server
 npm install
 npm run db:generate
 npm run db:push
-npm run dev  # Server at http://localhost:3001
+npm run dev  # Server at http://localhost:3002
 ```
 
 ### Start Frontend
@@ -200,9 +259,18 @@ npm install
 npm run dev  # Client at http://localhost:5173
 ```
 
+### Using Ollama
+1. Download and install Ollama from https://ollama.ai
+2. Pull a model: `ollama pull gemma4:latest`
+3. Open Settings in the dashboard
+4. Select **Ollama** as the provider
+5. Choose your installed model from the dropdown
+6. Click Save Settings
+7. Start chatting — the AI will use your local Ollama instance
+
 ---
 
-## Project Structure (Updated)
+## Project Structure (Current)
 
 ```
 AI-Assistant-Dashboard/
@@ -214,7 +282,7 @@ AI-Assistant-Dashboard/
 │   │   │   │   ├── Toast.tsx      # Toast notification system
 │   │   │   │   └── Modal.tsx      # Modal component
 │   │   │   ├── chat/              # Chat components
-│   │   │   │   ├── ChatPanel.tsx
+│   │   │   │   ├── ChatPanel.tsx  # Chat UI with error display
 │   │   │   │   └── ChatMessage.tsx
 │   │   │   ├── dashboard/         # Dashboard widgets
 │   │   │   │   ├── InboxWidget.tsx
@@ -226,7 +294,7 @@ AI-Assistant-Dashboard/
 │   │   │   ├── layout/            # Layout components
 │   │   │   │   └── Header.tsx
 │   │   │   └── settings/          # Settings components
-│   │   │       └── SettingsModal.tsx
+│   │   │       └── SettingsModal.tsx  # LLM provider + model selection
 │   │   ├── hooks/                 # Custom hooks
 │   │   │   ├── index.ts
 │   │   │   └── usePolling.ts
@@ -235,7 +303,7 @@ AI-Assistant-Dashboard/
 │   │   │   ├── AuthCallbackPage.tsx
 │   │   │   └── DashboardPage.tsx
 │   │   ├── services/              # API client
-│   │   │   └── api.ts
+│   │   │   └── api.ts             # Fixed error response parsing
 │   │   ├── store/                 # Zustand stores
 │   │   │   ├── auth.store.ts
 │   │   │   ├── tasks.store.ts
@@ -275,7 +343,7 @@ AI-Assistant-Dashboard/
 │   │   │   ├── calendar.routes.ts
 │   │   │   ├── chat.routes.ts
 │   │   │   ├── task.routes.ts
-│   │   │   └── settings.routes.ts  # NEW
+│   │   │   └── settings.routes.ts
 │   │   ├── services/
 │   │   │   ├── auth.service.ts
 │   │   │   ├── ai/
@@ -291,11 +359,9 @@ AI-Assistant-Dashboard/
 │   │   │       ├── llm.types.ts
 │   │   │       ├── llm.provider.ts
 │   │   │       ├── openrouter.provider.ts
-│   │   │       ├── ollama.provider.ts
+│   │   │       ├── ollama.provider.ts  # Major fixes - see bug fix notes
 │   │   │       ├── llm.service.ts
 │   │   │       └── index.ts
-│   │   ├── types/
-│   │   │   └── api.types.ts
 │   │   └── utils/
 │   │       └── helpers.ts
 │   ├── prisma/
@@ -306,32 +372,82 @@ AI-Assistant-Dashboard/
 │   ├── implementation-plan.md
 │   └── progress-summary.md
 │
+├── docs/
+│   └── GOOGLE_OAUTH_SETUP.md
 ├── docker-compose.yml
 └── README.md
 ```
 
 ---
 
-## API Endpoints Summary (Updated)
+## API Endpoints Summary (Current)
 
-1. Start the database: `docker compose up -d postgres`
-2. Navigate to server: `cd server`
-3. Start dev server: `npm run dev`
-4. Server runs at: http://localhost:3002
-5. Continue with Phase 4: Create Gmail and Calendar services
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/auth/google` | Initiate Google OAuth |
+| GET | `/api/auth/google/callback` | OAuth callback |
+| GET | `/api/auth/me` | Get current user profile |
+| GET | `/api/auth/status` | Check auth status |
+| PATCH | `/api/auth/settings` | Update user settings (LLM provider, model, theme, timezone) |
+| POST | `/api/auth/logout` | Logout user |
+| DELETE | `/api/auth/account` | Delete user account |
 
----
+### Chat
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/chat/messages` | Send message (non-streaming) |
+| POST | `/api/chat/messages/stream` | Send message (SSE streaming) |
+| POST | `/api/chat/briefing` | Generate daily briefing |
+| GET | `/api/chat/conversations` | List conversations |
+| GET | `/api/chat/conversations/:id` | Get conversation with messages |
+| PATCH | `/api/chat/conversations/:id` | Update conversation title |
+| DELETE | `/api/chat/conversations/:id` | Delete conversation |
 
-### Settings API (NEW)
+### Emails
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/emails` | List emails |
+| GET | `/api/emails/prioritized` | Get AI-prioritized emails |
+| GET | `/api/emails/search` | Search emails |
+| GET | `/api/emails/:id` | Get email details |
+| GET | `/api/emails/thread/:threadId` | Get email thread |
+| POST | `/api/emails/sync` | Sync emails from Gmail |
+| PATCH | `/api/emails/:id/dismiss` | Dismiss an email |
+
+### Calendar
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/calendar/events` | List events |
+| GET | `/api/calendar/events/today` | Get today's events |
+| GET | `/api/calendar/events/:id` | Get event details |
+| POST | `/api/calendar/events` | Create event |
+| PATCH | `/api/calendar/events/:id` | Update event |
+| DELETE | `/api/calendar/events/:id` | Delete event |
+| POST | `/api/calendar/sync` | Sync from Google Calendar |
+| POST | `/api/calendar/check-conflicts` | Check scheduling conflicts |
+| GET | `/api/calendar/focus-time` | Find focus time slots |
+| PATCH | `/api/calendar/events/:id/dismiss` | Dismiss an event |
+
+### Tasks
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/tasks` | List tasks |
+| GET | `/api/tasks/stats` | Get task statistics |
+| GET | `/api/tasks/:id` | Get task |
+| POST | `/api/tasks` | Create task |
+| PATCH | `/api/tasks/:id` | Update task |
+| DELETE | `/api/tasks/:id` | Delete task |
+| POST | `/api/tasks/bulk-update` | Bulk update task status |
+
+### Settings
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/settings/llm/status` | Check LLM provider health (OpenRouter, Ollama) |
 | GET | `/api/settings/llm/models` | Get available models for a provider |
 
----
-
-## Reference Documents
-
-- Full implementation plan: `plans/implementation-plan.md`
-- UI Demo: `client/UI_demo.html`
-- Database schema: `server/prisma/schema.prisma`
+### Health
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Basic health check |
+| GET | `/health/detailed` | Detailed health with DB + LLM status |
