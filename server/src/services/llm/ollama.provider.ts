@@ -29,24 +29,54 @@ export class OllamaProvider extends LLMProvider {
 
   /**
    * Format messages for Ollama API
+   * 
+   * IMPORTANT: Ollama requires tool_call `arguments` to be a plain object (not a JSON string).
+   * Internally we store arguments as JSON strings (OpenAI-compatible format), so we must
+   * parse them back to objects when sending to Ollama.
    */
   private formatMessages(messages: ChatMessage[]): Record<string, unknown>[] {
     return messages.map((msg) => {
       const formatted: Record<string, unknown> = {
         role: msg.role,
-        content: msg.content,
+        content: msg.content || '',
       };
 
       // Ollama supports tool calls in newer versions
-      if (msg.tool_calls) {
-        formatted.tool_calls = msg.tool_calls.map((tc) => ({
-          id: tc.id,
-          type: tc.type,
-          function: {
-            name: tc.function.name,
-            arguments: tc.function.arguments,
-          },
-        }));
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        formatted.tool_calls = msg.tool_calls.map((tc) => {
+          // Ollama expects arguments as an object, NOT a JSON string.
+          // We store them as strings internally for OpenAI compatibility, so parse back.
+          let parsedArgs: Record<string, unknown> = {};
+          if (typeof tc.function.arguments === 'string') {
+            try {
+              parsedArgs = JSON.parse(tc.function.arguments);
+            } catch {
+              // If unparseable, wrap in a value key
+              parsedArgs = { value: tc.function.arguments };
+            }
+          } else if (tc.function.arguments && typeof tc.function.arguments === 'object') {
+            parsedArgs = tc.function.arguments as Record<string, unknown>;
+          }
+
+          return {
+            id: tc.id,
+            type: tc.type,
+            function: {
+              name: tc.function.name,
+              arguments: parsedArgs, // Must be object for Ollama
+            },
+          };
+        });
+      }
+
+      // Tool result messages: Ollama uses role="tool" with plain string content
+      if (msg.role === 'tool') {
+        // Content should be a plain string
+        formatted.content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+        // Include tool_call_id if present (links result back to the tool call that triggered it)
+        if (msg.tool_call_id) {
+          formatted.tool_call_id = msg.tool_call_id;
+        }
       }
 
       return formatted;
