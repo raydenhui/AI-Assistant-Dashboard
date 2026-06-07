@@ -1,0 +1,148 @@
+import { llmService } from "./llm.service";
+import prisma from "../../config/database";
+import { OpenRouterProvider } from "./openrouter.provider";
+import { OllamaProvider } from "./ollama.provider";
+import { BadRequestError } from "../../middleware/error.middleware";
+
+// Mock Prisma
+jest.mock("../../config/database", () => ({
+	__esModule: true,
+	default: {
+		user: {
+			findUnique: jest.fn(),
+		},
+	},
+}));
+
+// Mock config
+jest.mock("../../config/index.js", () => ({
+	config: {
+		llm: {
+			openrouter: {
+				apiKey: "test-openrouter-key",
+				defaultModel: "test-openrouter-model",
+				baseUrl: "https://openrouter.ai/api/v1",
+			},
+			ollama: {
+				defaultModel: "test-ollama-model",
+				baseUrl: "http://localhost:11434",
+			},
+		},
+	},
+}));
+
+describe("LLMService", () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+	});
+
+	describe("initializeProviders", () => {
+		it("should initialize openrouter and ollama providers", () => {
+			const providers = llmService.getAvailableProviderTypes();
+			expect(providers).toContain("openrouter");
+			expect(providers).toContain("ollama");
+		});
+	});
+
+	describe("getProvider", () => {
+		it("should return OpenRouter provider", () => {
+			const provider = llmService.getProvider("openrouter");
+			expect(provider).toBeInstanceOf(OpenRouterProvider);
+			expect(provider.model).toBe("test-openrouter-model");
+		});
+
+		it("should return Ollama provider", () => {
+			const provider = llmService.getProvider("ollama");
+			expect(provider).toBeInstanceOf(OllamaProvider);
+			expect(provider.model).toBe("test-ollama-model");
+		});
+
+		it("should return custom OpenRouter provider if user API key is provided", () => {
+			const provider = llmService.getProvider("openrouter", null, "user-key");
+			expect(provider).toBeInstanceOf(OpenRouterProvider);
+			expect((provider as any).apiKey).toBe("user-key");
+		});
+
+		it("should apply user settings if provided", () => {
+			const provider = llmService.getProvider("ollama", {
+				model: "custom-ollama-model",
+				temperature: 0.5,
+			});
+			expect(provider).toBeInstanceOf(OllamaProvider);
+			expect(provider.model).toBe("custom-ollama-model");
+		});
+	});
+
+	describe("getProviderForUser", () => {
+		it("should throw BadRequestError if user is not found", async () => {
+			(prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+			await expect(
+				llmService.getProviderForUser("non-existent"),
+			).rejects.toThrow(BadRequestError);
+		});
+
+		it("should return provider based on user settings", async () => {
+			const mockUser = {
+				id: "user-1",
+				llmProvider: "ollama",
+				llmSettings: { model: "user-ollama-model" },
+				openRouterKey: null,
+			};
+			(prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+
+			const provider = await llmService.getProviderForUser("user-1");
+			expect(provider).toBeInstanceOf(OllamaProvider);
+			expect(provider.model).toBe("user-ollama-model");
+		});
+	});
+
+	describe("parseToolCalls", () => {
+		it("should return empty array if toolCalls is undefined", () => {
+			expect(llmService.parseToolCalls(undefined)).toEqual([]);
+		});
+
+		it("should parse valid tool calls", () => {
+			const toolCalls = [
+				{
+					id: "call-1",
+					type: "function" as const,
+					function: {
+						name: "test_tool",
+						arguments: '{"arg1": "val1"}',
+					},
+				},
+			];
+
+			const parsed = llmService.parseToolCalls(toolCalls);
+			expect(parsed).toEqual([
+				{
+					id: "call-1",
+					name: "test_tool",
+					arguments: { arg1: "val1" },
+				},
+			]);
+		});
+
+		it("should handle invalid JSON in tool arguments gracefully", () => {
+			const toolCalls = [
+				{
+					id: "call-1",
+					type: "function" as const,
+					function: {
+						name: "test_tool",
+						arguments: "invalid-json",
+					},
+				},
+			];
+
+			const parsed = llmService.parseToolCalls(toolCalls);
+			expect(parsed).toEqual([
+				{
+					id: "call-1",
+					name: "test_tool",
+					arguments: {},
+				},
+			]);
+		});
+	});
+});
