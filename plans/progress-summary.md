@@ -1,9 +1,9 @@
 # AI Dashboard - Implementation Progress Summary
 
-## Project Status: Phases 1-7 Complete + Bug Fixes Applied
+## Project Status: Phases 1-8 Complete ✅
 
 **Last Updated:** 2026-06-08  
-**Current Phase:** 8 (Testing & Deployment) - Next
+**Current Phase:** Complete — all planned phases done
 
 ---
 
@@ -195,15 +195,29 @@ Also added `tool_call_id` pass-through for tool result messages.
 
 ---
 
-## Remaining Phases
+## ✅ Phase 8: Testing & Deployment (COMPLETE — 2026-06-08)
 
-### ⏳ Phase 8: Testing & Deployment
-- [ ] Unit tests for LLM provider (especially Ollama tool formatting)
-- [ ] Integration tests for chat endpoint with Ollama
-- [ ] Integration tests for API endpoints  
-- [ ] Component tests for React components
-- [ ] Production build configuration
-- [ ] Documentation
+**112 tests passing across 6 test suites.**
+
+### Test Files
+| File | Suite | Tests |
+|------|-------|-------|
+| `server/src/__tests__/helpers.test.ts` | Utility helpers | 22 |
+| `server/src/__tests__/auth.service.test.ts` | Auth service | 15 |
+| `server/src/__tests__/ollama.provider.test.ts` | OllamaProvider (Bug Fixes #4–#6) | 15 |
+| `server/src/__tests__/openrouter.provider.test.ts` | OpenRouterProvider | 22 |
+| `server/src/__tests__/llm.service.test.ts` | LLMService | 21 |
+| `server/src/__tests__/app.integration.test.ts` | HTTP endpoints (supertest) | 17 |
+
+### What Was Done
+- **OllamaProvider tests** — full coverage of `resolveModel()` fallback (Bug #4), `getHealthStatus()` model reporting (Bug #5), and `formatMessages()` argument serialisation (Bug #6)
+- **OpenRouterProvider tests** — covers chat, error handling, streaming stub, tool call serialisation, model listing, health check
+- **LLMService tests** — `parseToolCalls`, provider selection by user setting, health status, `getProviderForUser`
+- **Integration tests** — `GET /health`, `GET /health/detailed` (DB + LLM service checks), `GET /api`, 404 handler, CORS headers
+- **`server/src/app.ts`** — guarded `startServer()` with `NODE_ENV !== 'test'` to prevent port conflict during tests
+- **`server/jest.config.js`** — migrated `ts-jest` config from deprecated `globals` to `transform`; added `moduleNameMapper` for `.js` extension imports
+- **`docker-compose.prod.yml`** — production Docker Compose with server, client, postgres, optional Ollama; isolated `internal`/`external` networks; health checks on all services
+- **`docs/API.md`** — full REST API reference for all endpoints with request/response examples and error code table
 
 ---
 
