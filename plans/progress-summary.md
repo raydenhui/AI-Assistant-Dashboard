@@ -2,8 +2,9 @@
 
 ## Project Status: Phases 1-8 Complete ✅
 
-**Last Updated:** 2026-06-08  
-**Current Phase:** Complete — all planned phases done
+**Last Updated:** 2026-06-08 (test run verified)  
+**Current Phase:** Complete — all planned phases done  
+**Test Status:** ✅ 202/202 passing (112 server + 90 client)
 
 ---
 
@@ -197,27 +198,66 @@ Also added `tool_call_id` pass-through for tool result messages.
 
 ## ✅ Phase 8: Testing & Deployment (COMPLETE — 2026-06-08)
 
-**112 tests passing across 6 test suites.**
+**202 tests passing across 12 test files (server + client combined).**
 
-### Test Files
-| File | Suite | Tests |
-|------|-------|-------|
-| `server/src/__tests__/helpers.test.ts` | Utility helpers | 22 |
-| `server/src/__tests__/auth.service.test.ts` | Auth service | 15 |
-| `server/src/__tests__/ollama.provider.test.ts` | OllamaProvider (Bug Fixes #4–#6) | 15 |
-| `server/src/__tests__/openrouter.provider.test.ts` | OpenRouterProvider | 22 |
-| `server/src/__tests__/llm.service.test.ts` | LLMService | 21 |
-| `server/src/__tests__/app.integration.test.ts` | HTTP endpoints (supertest) | 17 |
+### Server Tests (Jest + ts-jest)
+
+**Runner:** Jest v30 · **Time:** 18.86 s · **Result:** ✅ All passing
+
+| File | Suite | Tests | Status |
+|------|-------|-------|--------|
+| `server/src/__tests__/helpers.test.ts` | Utility helpers | 22 | ✅ Pass |
+| `server/src/__tests__/auth.service.test.ts` | Auth service | 15 | ✅ Pass |
+| `server/src/__tests__/ollama.provider.test.ts` | OllamaProvider (Bug Fixes #4–#6) | 15 | ✅ Pass |
+| `server/src/__tests__/openrouter.provider.test.ts` | OpenRouterProvider | 22 | ✅ Pass |
+| `server/src/__tests__/llm.service.test.ts` | LLMService | 21 | ✅ Pass |
+| `server/src/__tests__/app.integration.test.ts` | HTTP endpoints (supertest) | 17 | ✅ Pass |
+| **Total** | | **112** | **✅ 6/6 suites** |
+
+**Server Warnings (non-fatal):**
+- `ts-jest` config still uses deprecated `globals` key — should be migrated to the `transform` array entry. Addressed by updating `server/jest.config.js`.
+- Jest recommends `--detectOpenHandles` flag due to async handles kept alive after tests finish (likely the Express server or Prisma connection).
+
+### Client Tests (Vitest)
+
+**Runner:** Vitest v4.1.8 · **Time:** 3.81 s · **Result:** ✅ All passing
+
+| File | Suite | Tests | Status |
+|------|-------|-------|--------|
+| `src/__tests__/utils/events.test.ts` | Event utilities | 12 | ✅ Pass |
+| `src/__tests__/services/api.test.ts` | API service client | 12 | ✅ Pass |
+| `src/__tests__/store/auth.store.test.ts` | Auth Zustand store | 12 | ✅ Pass |
+| `src/__tests__/store/tasks.store.test.ts` | Tasks Zustand store | 19 | ✅ Pass |
+| `src/__tests__/store/chat.store.test.ts` | Chat Zustand store | 19 | ✅ Pass |
+| `src/__tests__/hooks/usePolling.test.ts` | usePolling hook | 16 | ✅ Pass |
+| **Total** | | **90** | **✅ 6/6 files** |
+
+**Client Warnings (non-fatal):**
+- `esbuild` and `optimizeDeps.esbuildOptions` options used by `vite:react-babel` plugin are deprecated in the current Vitest/Vite version. Migration target is `oxc` / `optimizeDeps.rolldownOptions`. This is a plugin-level deprecation and does not affect test correctness.
+- One `act()` warning in `usePolling.test.ts` ("does not call onError when onError is not provided") — state update inside the hook triggers a React warning about missing `act()` wrapper. Tests still pass; wrapping the tick with `act()` would silence the warning.
+- Error logs in store tests (`Auth check failed`, `Logout error`, `Failed to fetch task stats`, `[ChatStore] Error sending message`) are **expected** — these are intentional negative test cases verifying error-handling paths. They confirm the stores correctly surface errors.
 
 ### What Was Done
 - **OllamaProvider tests** — full coverage of `resolveModel()` fallback (Bug #4), `getHealthStatus()` model reporting (Bug #5), and `formatMessages()` argument serialisation (Bug #6)
 - **OpenRouterProvider tests** — covers chat, error handling, streaming stub, tool call serialisation, model listing, health check
 - **LLMService tests** — `parseToolCalls`, provider selection by user setting, health status, `getProviderForUser`
 - **Integration tests** — `GET /health`, `GET /health/detailed` (DB + LLM service checks), `GET /api`, 404 handler, CORS headers
+- **Client store tests** — auth, tasks, and chat Zustand stores tested for happy paths and error paths
+- **Client hook tests** — `usePolling` tested for interval timing, pause/resume, error callbacks, and cleanup
+- **Client utility/service tests** — event utility functions and the API service client (axios wrapper, error parsing)
 - **`server/src/app.ts`** — guarded `startServer()` with `NODE_ENV !== 'test'` to prevent port conflict during tests
 - **`server/jest.config.js`** — migrated `ts-jest` config from deprecated `globals` to `transform`; added `moduleNameMapper` for `.js` extension imports
 - **`docker-compose.prod.yml`** — production Docker Compose with server, client, postgres, optional Ollama; isolated `internal`/`external` networks; health checks on all services
 - **`docs/API.md`** — full REST API reference for all endpoints with request/response examples and error code table
+
+### Latest Test Run — 2026-06-08
+
+```
+SERVER  (Jest)    — 112 / 112 passed  · 6 suites  · 18.86 s
+CLIENT  (Vitest)  —  90 /  90 passed  · 6 files   ·  3.81 s
+─────────────────────────────────────────────────────────────
+COMBINED          — 202 / 202 passed  · 12 files  · 22.67 s
+```
 
 ---
 
