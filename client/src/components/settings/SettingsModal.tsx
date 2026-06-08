@@ -171,7 +171,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     : ollamaModels;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="System Settings" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="System Settings" size="2xl">
       <form onSubmit={handleSubmit} className="space-y-6 py-2">
         {/* Section: AI Configuration */}
         <section>
