@@ -29,24 +29,54 @@ export class OllamaProvider extends LLMProvider {
 
   /**
    * Format messages for Ollama API
+   * 
+   * IMPORTANT: Ollama requires tool_call `arguments` to be a plain object (not a JSON string).
+   * Internally we store arguments as JSON strings (OpenAI-compatible format), so we must
+   * parse them back to objects when sending to Ollama.
    */
   private formatMessages(messages: ChatMessage[]): Record<string, unknown>[] {
     return messages.map((msg) => {
       const formatted: Record<string, unknown> = {
         role: msg.role,
-        content: msg.content,
+        content: msg.content || '',
       };
 
       // Ollama supports tool calls in newer versions
-      if (msg.tool_calls) {
-        formatted.tool_calls = msg.tool_calls.map((tc) => ({
-          id: tc.id,
-          type: tc.type,
-          function: {
-            name: tc.function.name,
-            arguments: tc.function.arguments,
-          },
-        }));
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        formatted.tool_calls = msg.tool_calls.map((tc) => {
+          // Ollama expects arguments as an object, NOT a JSON string.
+          // We store them as strings internally for OpenAI compatibility, so parse back.
+          let parsedArgs: Record<string, unknown> = {};
+          if (typeof tc.function.arguments === 'string') {
+            try {
+              parsedArgs = JSON.parse(tc.function.arguments);
+            } catch {
+              // If unparseable, wrap in a value key
+              parsedArgs = { value: tc.function.arguments };
+            }
+          } else if (tc.function.arguments && typeof tc.function.arguments === 'object') {
+            parsedArgs = tc.function.arguments as Record<string, unknown>;
+          }
+
+          return {
+            id: tc.id,
+            type: tc.type,
+            function: {
+              name: tc.function.name,
+              arguments: parsedArgs, // Must be object for Ollama
+            },
+          };
+        });
+      }
+
+      // Tool result messages: Ollama uses role="tool" with plain string content
+      if (msg.role === 'tool') {
+        // Content should be a plain string
+        formatted.content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+        // Include tool_call_id if present (links result back to the tool call that triggered it)
+        if (msg.tool_call_id) {
+          formatted.tool_call_id = msg.tool_call_id;
+        }
       }
 
       return formatted;
@@ -80,19 +110,67 @@ export class OllamaProvider extends LLMProvider {
   }
 
   /**
+   * Check if model is available and return the best model to use
+   * Falls back to first available model if configured model not found
+   */
+  private async resolveModel(): Promise<string> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tags`, { method: 'GET' });
+      if (!response.ok) return this.config.model;
+      
+      const data = await response.json() as { models: Array<{ name: string }> };
+      const available = data.models.map(m => m.name);
+      
+      // Check if configured model exists (exact match or with tag)
+      const modelExists = available.some(
+        m => m === this.config.model || m.startsWith(`${this.config.model}:`)
+      );
+      
+      if (modelExists) return this.config.model;
+      
+      // Configured model not found - use first available
+      if (available.length > 0) {
+        console.warn(`[OllamaProvider] Model '${this.config.model}' not found. Available: ${available.join(', ')}. Falling back to '${available[0]}'.`);
+        return available[0]!;
+      }
+      
+      throw new Error(
+        `Ollama model '${this.config.model}' not found. ` +
+        `No models are installed. Run: ollama pull ${this.config.model}`
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) throw error;
+      return this.config.model; // fallback on network error
+    }
+  }
+
+  /**
    * Send a chat completion request
    */
   async chat(options: ChatCompletionOptions): Promise<ChatCompletionResponse> {
+    // Resolve model (with fallback if configured model not installed)
+    const resolvedModel = await this.resolveModel();
+    const requestBody = this.buildRequestBody({ ...options, stream: false });
+    (requestBody as any).model = resolvedModel;
+
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(this.buildRequestBody({ ...options, stream: false })),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const error = await response.text();
+      // Provide helpful error message for model not found
+      if (response.status === 404 || error.toLowerCase().includes('not found')) {
+        throw new Error(
+          `Ollama model '${resolvedModel}' not found. ` +
+          `Run: ollama pull ${resolvedModel}. ` +
+          `Or go to Settings to select an installed model.`
+        );
+      }
       throw new Error(`Ollama API error: ${response.status} - ${error}`);
     }
 
@@ -156,16 +234,28 @@ export class OllamaProvider extends LLMProvider {
   async *chatStream(
     options: ChatCompletionOptions
   ): AsyncGenerator<StreamChunk, void, unknown> {
+    // Resolve model (with fallback if configured model not installed)
+    const resolvedModel = await this.resolveModel();
+    const requestBody = this.buildRequestBody({ ...options, stream: true });
+    (requestBody as any).model = resolvedModel;
+
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(this.buildRequestBody({ ...options, stream: true })),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       const error = await response.text();
+      if (response.status === 404 || error.toLowerCase().includes('not found')) {
+        throw new Error(
+          `Ollama model '${resolvedModel}' not found. ` +
+          `Run: ollama pull ${resolvedModel}. ` +
+          `Or go to Settings to select an installed model.`
+        );
+      }
       throw new Error(`Ollama API error: ${response.status} - ${error}`);
     }
 
@@ -265,6 +355,8 @@ export class OllamaProvider extends LLMProvider {
 
   /**
    * Get detailed health status
+   * Reports available=true if Ollama is running and has at least one model.
+   * Model-specific availability is handled by resolveModel() during actual chat calls.
    */
   async getHealthStatus(_apiKey?: string): Promise<ProviderHealthStatus> {
     const startTime = Date.now();
@@ -282,33 +374,37 @@ export class OllamaProvider extends LLMProvider {
           provider: 'ollama',
           available: false,
           model: this.config.model,
-          error: `API returned ${response.status}`,
+          error: `Ollama API returned ${response.status}`,
           latencyMs,
         };
       }
 
-      // Check if the specific model is available
       const data = await response.json() as {
         models: Array<{ name: string }>;
       };
-      const modelAvailable = data.models.some(
-        (m) => m.name === this.config.model || m.name.startsWith(`${this.config.model}:`)
-      );
 
-      if (!modelAvailable) {
+      if (data.models.length === 0) {
         return {
           provider: 'ollama',
           available: false,
           model: this.config.model,
-          error: `Model ${this.config.model} not found. Run: ollama pull ${this.config.model}`,
+          error: 'No models installed. Run: ollama pull <model-name>',
           latencyMs,
         };
       }
 
+      // Check if the configured model is available; report which model will be used
+      const configuredModelAvailable = data.models.some(
+        (m) => m.name === this.config.model || m.name.startsWith(`${this.config.model}:`)
+      );
+      const activeModel = configuredModelAvailable
+        ? this.config.model
+        : data.models[0]!.name;
+
       return {
         provider: 'ollama',
         available: true,
-        model: this.config.model,
+        model: activeModel,
         latencyMs,
       };
     } catch (error) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal, ModalFooter, ModalButton } from '../common/Modal';
 import { useAuthStore } from '../../store';
 import { authApi } from '../../services/api';
@@ -39,6 +39,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [llmStatus, setLLMStatus] = useState<LLMStatus>({ openrouter: false, ollama: false });
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [showOllamaHelp, setShowOllamaHelp] = useState(false);
+  const [ollamaModels, setOllamaModels] = useState<string[]>(DEFAULT_MODELS.ollama);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
   
   const [formData, setFormData] = useState({
     provider: user?.llmProvider || 'openrouter',
@@ -48,25 +50,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     timezone: user?.timezone || 'UTC',
   });
 
-  // Reset form when modal opens
-  useEffect(() => {
-    if (isOpen && user) {
-      setFormData({
-        provider: user.llmProvider,
-        model: user.llmModel || DEFAULT_MODELS[user.llmProvider as keyof typeof DEFAULT_MODELS][0],
-        openRouterKey: '', // Don't populate with the masked key from server
-        theme: (user.theme || 'SYSTEM') as 'LIGHT' | 'DARK' | 'SYSTEM',
-        timezone: user.timezone || 'UTC',
+  const fetchOllamaModels = useCallback(async () => {
+    setIsFetchingModels(true);
+    try {
+      const response = await fetch('/api/settings/llm/models?provider=ollama', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
       });
-      checkLLMStatus();
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data?.models?.length > 0) {
+          setOllamaModels(data.data.models);
+        }
+      }
+    } catch {
+      // Keep default models on error
+    } finally {
+      setIsFetchingModels(false);
     }
-  }, [isOpen, user]);
+  }, []);
 
-  const getDefaultModel = (provider: 'openrouter' | 'ollama'): string => {
-    return DEFAULT_MODELS[provider][0];
-  };
-
-  const checkLLMStatus = async () => {
+  const checkLLMStatus = useCallback(async () => {
     setIsCheckingStatus(true);
     try {
       const response = await fetch('/api/settings/llm/status', {
@@ -76,16 +81,41 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       });
       if (response.ok) {
         const data = await response.json();
-        setLLMStatus({
-          openrouter: data.openrouter || false,
-          ollama: data.ollama || false,
-        });
+        // Backend returns { success: true, data: { openrouter: bool, ollama: bool } }
+        const statusData = data.data || data;
+        const newStatus = {
+          openrouter: statusData.openrouter || false,
+          ollama: statusData.ollama || false,
+        };
+        setLLMStatus(newStatus);
+        if (newStatus.ollama) {
+          fetchOllamaModels();
+        }
       }
     } catch {
-      setLLMStatus({ openrouter: true, ollama: false });
+      setLLMStatus({ openrouter: false, ollama: false });
     } finally {
       setIsCheckingStatus(false);
     }
+  }, [fetchOllamaModels]);
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen && user) {
+      setFormData({
+        provider: user.llmProvider,
+        model: user.llmModel || DEFAULT_MODELS[user.llmProvider as keyof typeof DEFAULT_MODELS]?.[0] || '',
+        openRouterKey: '', // Don't populate with the masked key from server
+        theme: (user.theme || 'SYSTEM') as 'LIGHT' | 'DARK' | 'SYSTEM',
+        timezone: user.timezone || 'UTC',
+      });
+      checkLLMStatus();
+    }
+  }, [isOpen, user, checkLLMStatus]);
+
+  const getDefaultModel = (provider: 'openrouter' | 'ollama'): string => {
+    if (provider === 'ollama') return ollamaModels[0] || DEFAULT_MODELS.ollama[0];
+    return DEFAULT_MODELS[provider][0];
   };
 
   const handleProviderChange = (provider: 'openrouter' | 'ollama') => {
@@ -138,18 +168,30 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const models = formData.provider === 'openrouter' 
     ? DEFAULT_MODELS.openrouter 
-    : DEFAULT_MODELS.ollama;
+    : ollamaModels;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="System Settings" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="System Settings" size="2xl">
       <form onSubmit={handleSubmit} className="space-y-6 py-2">
         {/* Section: AI Configuration */}
         <section>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <i className="fas fa-robot text-xs"></i>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <i className="fas fa-robot text-xs"></i>
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">AI Intelligence</h3>
             </div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">AI Intelligence</h3>
+            <button
+              type="button"
+              onClick={() => checkLLMStatus()}
+              disabled={isCheckingStatus}
+              className="flex items-center gap-1.5 text-[10px] font-medium text-gray-500 hover:text-primary transition-colors disabled:opacity-50"
+              title="Re-check connection status"
+            >
+              <i className={`fas fa-rotate-right text-[10px] ${isCheckingStatus ? 'fa-spin' : ''}`}></i>
+              {isCheckingStatus ? 'Checking...' : 'Refresh Status'}
+            </button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -183,6 +225,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       Active
                     </span>
                   )}
+                  <div className="flex items-center gap-1">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isCheckingStatus ? 'bg-yellow-400 animate-pulse' : llmStatus.openrouter ? 'bg-green-500' : 'bg-red-400'}`}></span>
+                    <span className={`text-[8px] font-bold uppercase tracking-wider ${isCheckingStatus ? 'text-yellow-600' : llmStatus.openrouter ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                      {isCheckingStatus ? 'Checking' : llmStatus.openrouter ? 'Connected' : 'Offline'}
+                    </span>
+                  </div>
                   <span className="px-1.5 py-0.5 rounded-full bg-red-50 text-[8px] font-bold text-red-600 border border-red-100 uppercase tracking-wider dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30">
                     Not Safe
                   </span>
@@ -231,6 +279,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       Active
                     </span>
                   )}
+                  <div className="flex items-center gap-1">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isCheckingStatus ? 'bg-yellow-400 animate-pulse' : llmStatus.ollama ? 'bg-green-500' : 'bg-red-400'}`}></span>
+                    <span className={`text-[8px] font-bold uppercase tracking-wider ${isCheckingStatus ? 'text-yellow-600' : llmStatus.ollama ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                      {isCheckingStatus ? 'Checking' : llmStatus.ollama ? 'Connected' : 'Offline'}
+                    </span>
+                  </div>
                   <span className="px-1.5 py-0.5 rounded-full bg-green-50 text-[8px] font-bold text-green-600 border border-green-100 uppercase tracking-wider dark:bg-green-900/20 dark:text-green-400 dark:border-green-900/30">
                     Recommended
                   </span>
@@ -255,9 +309,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         <section className="bg-gray-50 rounded-xl p-4 border border-gray-100 dark:bg-slate-800/50 dark:border-slate-700 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="model" className="block text-xs font-bold text-gray-900 mb-1.5 dark:text-white">
-                Model Selection
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="model" className="block text-xs font-bold text-gray-900 dark:text-white">
+                  Model Selection
+                </label>
+                {formData.provider === 'ollama' && isFetchingModels && (
+                  <span className="text-[9px] text-gray-400 flex items-center gap-1">
+                    <i className="fas fa-circle-notch fa-spin text-[8px]"></i>
+                    Fetching models...
+                  </span>
+                )}
+              </div>
               <select
                 id="model"
                 value={formData.model}
@@ -271,6 +333,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </option>
                 ))}
               </select>
+              {formData.provider === 'ollama' && llmStatus.ollama && (
+                <p className="mt-1 text-[9px] text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <i className="fas fa-check-circle"></i>
+                  {ollamaModels.length} model{ollamaModels.length !== 1 ? 's' : ''} found on your local Ollama instance
+                </p>
+              )}
             </div>
 
             {/* OpenRouter API Key */}
@@ -295,6 +363,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
           </div>
+
+          {/* Ollama Connected Success */}
+          {formData.provider === 'ollama' && llmStatus.ollama && !isCheckingStatus && (
+            <div className="mt-2 p-3 rounded-xl bg-green-50 border border-green-100 dark:bg-green-900/10 dark:border-green-900/30">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0 dark:bg-green-900/30 dark:text-green-400">
+                  <i className="fas fa-check text-xs"></i>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-green-800 dark:text-green-300">Ollama Connected</p>
+                  <p className="text-[10px] text-green-600 dark:text-green-400">
+                    Your local Ollama instance is running at localhost:11434
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Ollama Setup Guide */}
           {formData.provider === 'ollama' && !llmStatus.ollama && !isCheckingStatus && (

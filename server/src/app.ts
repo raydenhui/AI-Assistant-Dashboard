@@ -198,7 +198,10 @@ async function startServer(): Promise<void> {
   }
 }
 
-// Start the server
-startServer();
+// Start the server only when not in test environment
+// (Supertest manages its own port binding; auto-starting conflicts during tests)
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 export default app;
