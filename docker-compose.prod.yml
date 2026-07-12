@@ -12,6 +12,8 @@ services:
     image: postgres:16-alpine
     container_name: ai-dashboard-db-prod
     restart: always
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -37,23 +39,25 @@ services:
       target: production
     container_name: ai-dashboard-server-prod
     restart: always
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
-      PORT: ${PORT:-3001}
+      PORT: ${PORT:-3002}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      FRONTEND_URL: ${FRONTEND_URL}
+      FRONTEND_URL: http://localhost
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
       OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-google/gemini-flash-1.5}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
       OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-llama3.2}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
     ports:
-      - "${PORT:-3001}:${PORT:-3001}"
+      - "${PORT:-3002}:${PORT:-3002}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,7 +65,7 @@ services:
       - internal
       - external
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${PORT:-3001}/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:${PORT:-3002}/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -72,10 +76,13 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3001/api}
     container_name: ai-dashboard-client-prod
     restart: always
+    env_file:
+      - .env
+    environment:
+      SERVER_HOST: ai-dashboard-server-prod
+      SERVER_PORT: ${PORT:-3002}
     ports:
       - "${CLIENT_PORT:-80}:80"
     depends_on:

@@ -114,7 +114,11 @@ export const authApi = {
   // Get Google OAuth URL
   getGoogleAuthUrl: async (): Promise<GoogleAuthResponse> => {
     const response = await apiClient.get<ApiResponse<GoogleAuthResponse>>('/auth/google');
-    return response.data.data!;
+    const data = response.data?.data;
+    if (!data?.authUrl) {
+      throw new Error('Invalid response from server: missing authUrl');
+    }
+    return data;
   },
 
   // Check auth status
