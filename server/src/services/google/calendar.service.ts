@@ -356,11 +356,11 @@ export async function createEvent(
     location: input.location,
     start: {
       dateTime: input.startTime.toISOString(),
-      timeZone: input.timezone || 'UTC',
+      timeZone: input.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     },
     end: {
       dateTime: input.endTime.toISOString(),
-      timeZone: input.timezone || 'UTC',
+      timeZone: input.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     },
   };
 

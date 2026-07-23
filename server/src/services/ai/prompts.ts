@@ -23,6 +23,7 @@ export const SYSTEM_PROMPT = `You are a concise AI productivity assistant integr
 - **Conciseness**: Summarize information. Never quote long texts unless asked.
 - **Prioritization**: Focus on High (urgent/VIP), Medium (important), and Low (FYI).
 - **Task Creation**: Be specific with titles and deadlines.
+- **Time Handling**: Always reason and speak in the user's LOCAL time (see Current Context below). When calling tools that accept datetimes (e.g., create_calendar_event, create_task, check_calendar_conflicts), pass the user's local wall-clock time in ISO 8601 format WITHOUT a timezone suffix (e.g., "2026-07-24T14:00:00"). Do NOT convert to UTC and do NOT append "Z" or an offset — the server anchors local times to the user's timezone.
 
 ## Response Format
 - Use markdown headers (###) and bullet points.
@@ -253,6 +254,7 @@ export function getSystemPrompt(options?: {
     prompt += `\n\n## Current Context\n- Current Date/Time (UTC): ${now.toISOString()}`;
     prompt += `\n- User Local Time: ${localTime}`;
     prompt += `\n- User Timezone: ${timezone}`;
+    prompt += `\n- All times you discuss with the user and pass to tools are in the User Timezone. Use ISO 8601 local time without a timezone suffix for tool arguments (e.g., "2026-07-24T14:00:00").`;
   }
   
   if (options?.customInstructions) {

@@ -417,6 +417,17 @@ export const calendarApi = {
   },
 };
 
+// ==================== Settings API ====================
+
+export const settingsApi = {
+  checkLLMStatus: async (): Promise<{ openrouter: boolean; ollama: boolean }> => {
+    return request<{ openrouter: boolean; ollama: boolean }>({
+      method: 'GET',
+      url: '/settings/llm/status',
+    });
+  },
+};
+
 // ==================== Chat API ====================
 
 export const chatApi = {
@@ -523,4 +534,5 @@ export default {
   emails: emailsApi,
   calendar: calendarApi,
   chat: chatApi,
+  settings: settingsApi,
 };

@@ -1,17 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthStore, useChatStore } from '../../store';
 import { SettingsModal } from '../settings/SettingsModal';
+import { settingsApi } from '../../services/api';
 
 export function Header() {
   const { user, logout } = useAuthStore();
   const { isStreaming } = useChatStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [aiStatus, setAiStatus] = useState<'online' | 'offline' | 'thinking'>('online');
+  const [aiStatus, setAiStatus] = useState<'online' | 'offline' | 'thinking'>('offline');
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Update AI status based on chat store streaming state
+  const checkAIStatus = async () => {
+    try {
+      const status = await settingsApi.checkLLMStatus();
+      const provider = user?.llmProvider || 'ollama';
+      const isAvailable = provider === 'ollama' ? status.ollama : status.openrouter;
+      setAiStatus(prev => {
+        if (prev === 'thinking') return prev;
+        return isAvailable ? 'online' : 'offline';
+      });
+    } catch {
+      setAiStatus(prev => prev === 'thinking' ? prev : 'offline');
+    }
+  };
+
   useEffect(() => {
-    setAiStatus(isStreaming ? 'thinking' : 'online');
+    checkAIStatus();
+    pollingRef.current = setInterval(checkAIStatus, 30000);
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [user?.llmProvider]);
+
+  useEffect(() => {
+    if (isStreaming) {
+      setAiStatus('thinking');
+    } else {
+      checkAIStatus();
+    }
   }, [isStreaming]);
 
   const getInitials = (name: string | null | undefined) => {

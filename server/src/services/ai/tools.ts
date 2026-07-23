@@ -7,6 +7,7 @@ import type { Tool } from '../llm/llm.types';
 import { prisma } from '../../config/database';
 import * as gmail from '../google/gmail.service';
 import * as calendar from '../google/calendar.service';
+import { parseInTimezone } from '../../utils/timezone';
 import type { User, Priority, TaskStatus, CachedEmail, CachedEvent } from '@prisma/client';
 
 /**
@@ -226,11 +227,11 @@ export const AI_TOOLS: Tool[] = [
           },
           startTime: {
             type: 'string',
-            description: 'Start time in ISO format',
+            description: 'Event start time. Provide the user\'s local wall-clock time in ISO 8601 format without a timezone suffix (e.g., "2026-07-24T14:00:00"); the server interprets it in the user\'s timezone. You may also pass a full ISO string with an explicit offset.',
           },
           endTime: {
             type: 'string',
-            description: 'End time in ISO format',
+            description: 'Event end time. Provide the user\'s local wall-clock time in ISO 8601 format without a timezone suffix (e.g., "2026-07-24T15:00:00"); the server interprets it in the user\'s timezone. You may also pass a full ISO string with an explicit offset.',
           },
           location: {
             type: 'string',
@@ -256,11 +257,11 @@ export const AI_TOOLS: Tool[] = [
         properties: {
           startTime: {
             type: 'string',
-            description: 'Start of range in ISO format',
+            description: 'Start of range. Provide the user\'s local wall-clock time in ISO 8601 format without a timezone suffix (e.g., "2026-07-24T14:00:00"); the server interprets it in the user\'s timezone.',
           },
           endTime: {
             type: 'string',
-            description: 'End of range in ISO format',
+            description: 'End of range. Provide the user\'s local wall-clock time in ISO 8601 format without a timezone suffix (e.g., "2026-07-24T15:00:00"); the server interprets it in the user\'s timezone.',
           },
         },
         required: ['startTime', 'endTime'],
@@ -309,7 +310,7 @@ export const AI_TOOLS: Tool[] = [
           },
           dueBefore: {
             type: 'string',
-            description: 'Filter tasks due before this date (ISO format)',
+            description: 'Filter tasks due before this date. Provide the user\'s local wall-clock time in ISO 8601 format without a timezone suffix; the server interprets it in the user\'s timezone.',
           },
         },
       },
@@ -333,7 +334,7 @@ export const AI_TOOLS: Tool[] = [
           },
           dueDate: {
             type: 'string',
-            description: 'Due date in ISO format',
+            description: 'Due date. Provide the user\'s local wall-clock time in ISO 8601 format without a timezone suffix (e.g., "2026-07-25T09:00:00"); the server interprets it in the user\'s timezone.',
           },
           priority: {
             type: 'string',
@@ -380,7 +381,7 @@ export const AI_TOOLS: Tool[] = [
           },
           dueDate: {
             type: 'string',
-            description: 'New due date in ISO format',
+            description: 'New due date. Provide the user\'s local wall-clock time in ISO 8601 format without a timezone suffix; the server interprets it in the user\'s timezone.',
           },
           priority: {
             type: 'string',
@@ -687,15 +688,18 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
   async create_calendar_event(args, context): Promise<ToolResult> {
     try {
+      const timezone = context.user.timezone || 'UTC';
       const eventData: calendar.CreateEventInput = {
         title: args.title as string,
         description: args.description as string | undefined,
         location: args.location as string | undefined,
-        startTime: new Date(args.startTime as string),
-        endTime: new Date(args.endTime as string),
+        // LLM provides local wall-clock times; anchor them to the user's timezone
+        startTime: parseInTimezone(args.startTime as string, timezone),
+        endTime: parseInTimezone(args.endTime as string, timezone),
         attendees: args.attendees as string[] | undefined,
+        timezone,
       };
-      
+
       const event = await calendar.createEvent(context.user.id, eventData);
       return { success: true, data: event };
     } catch (error) {
@@ -708,8 +712,9 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
 
   async check_calendar_conflicts(args, context): Promise<ToolResult> {
     try {
-      const startTime = new Date(args.startTime as string);
-      const endTime = new Date(args.endTime as string);
+      const timezone = context.user.timezone || 'UTC';
+      const startTime = parseInTimezone(args.startTime as string, timezone);
+      const endTime = parseInTimezone(args.endTime as string, timezone);
       
       const conflicts = await calendar.checkConflicts(
         context.user.id,
@@ -802,13 +807,14 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
       if (!title) {
         return { success: false, error: 'Task title is required' };
       }
-      
+
+      const timezone = context.user.timezone || 'UTC';
       const task = await prisma.task.create({
         data: {
           userId: context.user.id,
           title,
           description: args.description as string | undefined,
-          dueDate: args.dueDate ? new Date(args.dueDate as string) : undefined,
+          dueDate: args.dueDate ? parseInTimezone(args.dueDate as string, timezone) : undefined,
           priority: mapPriority(args.priority as string | undefined),
           source: args.source as string | undefined,
           sourceId: args.sourceId as string | undefined,
@@ -846,7 +852,9 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
       if (args.description !== undefined) updateData.description = args.description;
       if (args.status) updateData.status = mapTaskStatus(args.status as string);
       if (args.priority) updateData.priority = mapPriority(args.priority as string);
-      if (args.dueDate) updateData.dueDate = new Date(args.dueDate as string);
+      if (args.dueDate) {
+        updateData.dueDate = parseInTimezone(args.dueDate as string, context.user.timezone || 'UTC');
+      }
       
       const task = await prisma.task.update({
         where: { id: taskId },
