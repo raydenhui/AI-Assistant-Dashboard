@@ -15,6 +15,25 @@ export class EmailAnalysisService {
   static async analyzeEmails(userId: string, emails: CachedEmail[]): Promise<void> {
     if (emails.length === 0) return;
 
+    // Analyze in small batches so large syncs (many emails) don't produce an
+    // oversized LLM response that gets truncated/invalid JSON and leaves every
+    // email without a priority. Small batches reliably return complete JSON.
+    // The newest email is always in the first batch (caller sorts newest-first).
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const batch = emails.slice(i, i + BATCH_SIZE);
+      // Await each batch sequentially so the LLM is not overwhelmed and the
+      // results are persisted incrementally (visible in UI after each batch).
+      await this.analyzeBatch(userId, batch);
+    }
+  }
+
+  /**
+   * Analyze a single small batch of emails and persist results
+   */
+  private static async analyzeBatch(userId: string, emails: CachedEmail[]): Promise<void> {
+    if (emails.length === 0) return;
+
     // Get user for timezone
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -53,7 +72,7 @@ ${JSON.stringify(emailData, null, 2)}`;
       console.log(`[EmailAnalysisService] Analyzing ${emails.length} emails for user ${userId}`);
       const response = await llmService.chat(userId, {
         messages: [
-          { role: 'system', content: 'You are a helpful assistant that analyzes emails. You MUST return a JSON object with a "results" array.' },
+          { role: 'system', content: 'You are a helpful assistant that analyzes emails. You MUST return a JSON object with a "results" array containing one entry per email.' },
           { role: 'user', content: prompt }
         ],
         response_format: { type: 'json_object' }
@@ -80,18 +99,22 @@ ${JSON.stringify(emailData, null, 2)}`;
         }
       } catch (e) {
         console.error('[EmailAnalysisService] Failed to parse LLM response as JSON:', e);
-        // Fallback: try to extract something if it's not perfect JSON
         return;
       }
 
-      console.log(`[EmailAnalysisService] Found ${results.length} analysis results`);
+      console.log(`[EmailAnalysisService] Found ${results.length} analysis results for ${emails.length} emails`);
+
+      // Track which of the analyzed emails the LLM actually returned a result
+      // for so we can detect any that were dropped from a truncated response.
+      const processedIds = new Set<string>();
 
       for (const result of results) {
         if (!result.id || !result.priority) continue;
+        processedIds.add(result.id);
 
         const priority = this.mapPriority(result.priority);
         console.log(`[EmailAnalysisService] Updating email ${result.id} with priority ${priority} (${result.priority})`);
-        
+
         await gmailService.updateEmailAnalysis(result.id, {
           aiPriority: priority,
           aiSummary: result.summary || 'No summary provided',
@@ -127,6 +150,22 @@ ${JSON.stringify(emailData, null, 2)}`;
               console.log(`[EmailAnalysisService] Created task: ${item.title} for email ${result.id}`);
             }
           }
+        }
+      }
+
+      // Fallback: any email the LLM did not return a result for gets marked as
+      // LOW so it does not stay stuck in the "un-analyzed" (aiPriority=null)
+      // state forever and get silently skipped by the prioritized inbox.
+      const unprocessed = emails.filter(e => !processedIds.has(e.gmailId));
+      if (unprocessed.length > 0) {
+        console.warn(`[EmailAnalysisService] LLM returned no result for ${unprocessed.length} email(s); marking as LOW: ${unprocessed.map(e => e.gmailId).join(', ')}`);
+        for (const e of unprocessed) {
+          await gmailService.updateEmailAnalysis(e.gmailId, {
+            aiPriority: Priority.LOW,
+            aiSummary: e.snippet?.substring(0, 100) || 'No summary available',
+            aiCategories: ['unrelevent'],
+            aiActionItems: [],
+          });
         }
       }
     } catch (error) {
