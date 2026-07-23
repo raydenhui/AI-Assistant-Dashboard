@@ -82,15 +82,28 @@ router.get('/llm/models', requireAuth, async (req: Request, res: Response) => {
         models = ['llama3.2', 'llama3.1', 'mistral', 'mixtral', 'codellama'];
       }
     } else {
-      // OpenRouter - return popular models
-      models = [
-        'google/gemini-3-flash-preview',
-        'google/gemini-3-pro-preview',
-        'anthropic/claude-sonnet-4.5',
-        'anthropic/claude-haiku-4.5',
-        'openai/gpt-5.2-chat',
-        'openai/gpt-oss-120b',
-      ];
+      // OpenRouter - fetch the live model list from the OpenRouter API using
+      // the user's key (falling back to the server-configured key). This lets
+      // the client offer up-to-date suggestions while still allowing free-form
+      // model IDs.
+      try {
+        const openrouterProvider = llmService.getOpenRouterProvider();
+        const userRecord = await prisma.user.findUnique({ where: { id: req.userId! } }) as any;
+        const modelInfos = await openrouterProvider.listModels(
+          userRecord?.openRouterKey || config.llm.openrouter.apiKey
+        );
+        models = modelInfos.map(m => m.id);
+      } catch (e) {
+        console.error('Failed to fetch OpenRouter models, using fallback list:', e);
+        models = [
+          'google/gemini-3-flash-preview',
+          'google/gemini-3-pro-preview',
+          'anthropic/claude-sonnet-4.5',
+          'anthropic/claude-haiku-4.5',
+          'openai/gpt-5.2-chat',
+          'openai/gpt-oss-120b',
+        ];
+      }
     }
 
     return res.json({
