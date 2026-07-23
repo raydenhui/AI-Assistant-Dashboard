@@ -42,7 +42,7 @@ export class EmailAnalysisService {
 - User Timezone: ${userTimezone}
 
 Use the User Local Time and Timezone to judge the urgency of emails (e.g., "today", "tomorrow", "8:00pm") and to set accurate due dates for action items.
-All due dates in your response should be in ISO 8601 format, correctly converted to UTC based on the user's timezone.
+For due dates, use the exact time from the email content as-is. Do NOT convert or adjust the timezone — just output the date/time exactly as it appears in the email in ISO 8601 format.
 
 ${EMAIL_PRIORITY_PROMPT}
 
@@ -203,7 +203,7 @@ ${JSON.stringify(emailData, null, 2)}`;
 - User Timezone: ${userTimezone}
 
 Check if these emails still need user response or if their priority has changed based on the current time.
-All due dates in your response should be in ISO 8601 format, correctly converted to UTC based on the user's timezone.
+For due dates, use the exact time from the email content as-is. Do NOT convert or adjust the timezone — just output the date/time exactly as it appears in the email in ISO 8601 format.
 
 Guidelines:
 ${EMAIL_PRIORITY_PROMPT}
