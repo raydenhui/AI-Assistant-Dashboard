@@ -40,6 +40,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [showOllamaHelp, setShowOllamaHelp] = useState(false);
   const [ollamaModels, setOllamaModels] = useState<string[]>(DEFAULT_MODELS.ollama);
+  const [openRouterModels, setOpenRouterModels] = useState<string[]>(DEFAULT_MODELS.openrouter);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -71,6 +72,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   }, []);
 
+  const fetchOpenRouterModels = useCallback(async () => {
+    setIsFetchingModels(true);
+    try {
+      const response = await fetch('/api/settings/llm/models?provider=openrouter', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data?.models?.length > 0) {
+          setOpenRouterModels(data.data.models);
+        }
+      }
+    } catch {
+      // Keep default models on error
+    } finally {
+      setIsFetchingModels(false);
+    }
+  }, []);
+
   const checkLLMStatus = useCallback(async () => {
     setIsCheckingStatus(true);
     try {
@@ -91,13 +113,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         if (newStatus.ollama) {
           fetchOllamaModels();
         }
+        if (newStatus.openrouter) {
+          fetchOpenRouterModels();
+        }
       }
     } catch {
       setLLMStatus({ openrouter: false, ollama: false });
     } finally {
       setIsCheckingStatus(false);
     }
-  }, [fetchOllamaModels]);
+  }, [fetchOllamaModels, fetchOpenRouterModels]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -113,20 +138,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   }, [isOpen, user, checkLLMStatus]);
 
-  const getDefaultModel = (provider: 'openrouter' | 'ollama'): string => {
-    if (provider === 'ollama') return ollamaModels[0] || DEFAULT_MODELS.ollama[0];
-    return DEFAULT_MODELS[provider][0];
-  };
-
   const handleProviderChange = (provider: 'openrouter' | 'ollama') => {
-    setFormData((prev) => ({
-      ...prev,
-      provider,
-      model: getDefaultModel(provider),
-    }));
+    setFormData((prev) => {
+      // Preserve the model the user already typed for this provider when possible;
+      // otherwise fall back to a sensible default for the newly-selected provider.
+      const fallback = provider === 'ollama'
+        ? (ollamaModels[0] || DEFAULT_MODELS.ollama[0])
+        : prev.model; // keep whatever the user had for OpenRouter
+      return { ...prev, provider, model: fallback };
+    });
+    if (provider === 'openrouter') {
+      fetchOpenRouterModels();
+    }
   };
 
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleModelChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prev) => ({ ...prev, model: e.target.value }));
   };
 
@@ -166,8 +192,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
-  const models = formData.provider === 'openrouter' 
-    ? DEFAULT_MODELS.openrouter 
+  const models = formData.provider === 'openrouter'
+    ? openRouterModels
     : ollamaModels;
 
   return (
@@ -313,31 +339,58 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <label htmlFor="model" className="block text-xs font-bold text-gray-900 dark:text-white">
                   Model Selection
                 </label>
-                {formData.provider === 'ollama' && isFetchingModels && (
+                {isFetchingModels && (
                   <span className="text-[9px] text-gray-400 flex items-center gap-1">
                     <i className="fas fa-circle-notch fa-spin text-[8px]"></i>
                     Fetching models...
                   </span>
                 )}
               </div>
-              <select
-                id="model"
-                value={formData.model}
-                onChange={handleModelChange}
-                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none cursor-pointer dark:bg-slate-800 dark:border-slate-600 dark:text-white"
-                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '0.8rem' }}
-              >
-                {models.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </select>
-              {formData.provider === 'ollama' && llmStatus.ollama && (
-                <p className="mt-1 text-[9px] text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <i className="fas fa-check-circle"></i>
-                  {ollamaModels.length} model{ollamaModels.length !== 1 ? 's' : ''} found on your local Ollama instance
-                </p>
+
+              {formData.provider === 'openrouter' ? (
+                <>
+                  <input
+                    id="model"
+                    type="text"
+                    value={formData.model}
+                    onChange={handleModelChange}
+                    placeholder="e.g. google/gemini-3-flash-preview"
+                    list="openrouter-models"
+                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                  />
+                  {/* Suggestions fetched live from OpenRouter; user can still type any model ID */}
+                  <datalist id="openrouter-models">
+                    {openRouterModels.map((m) => (
+                      <option key={m} value={m} />
+                    ))}
+                  </datalist>
+                  <p className="mt-1 text-[9px] text-gray-400 dark:text-slate-500 flex items-center gap-1">
+                    <i className="fas fa-keyboard"></i>
+                    Type any OpenRouter model ID (provider/model). Suggestions are shown as you type.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <select
+                    id="model"
+                    value={formData.model}
+                    onChange={handleModelChange}
+                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none cursor-pointer dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '0.8rem' }}
+                  >
+                    {models.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                  {llmStatus.ollama && (
+                    <p className="mt-1 text-[9px] text-green-600 dark:text-green-400 flex items-center gap-1">
+                      <i className="fas fa-check-circle"></i>
+                      {ollamaModels.length} model{ollamaModels.length !== 1 ? 's' : ''} found on your local Ollama instance
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
